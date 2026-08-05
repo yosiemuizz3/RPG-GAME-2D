@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>2D RPG World Balanced - dev Mr. yosie</title>
+    <title>2D RPG World Masterpiece v9.0 - dev Mr. yosie</title>
     <style>
         * {
             box-sizing: border-box;
@@ -62,6 +62,7 @@
         #canvasContainer {
             position: relative;
             width: 100%;
+            overflow: hidden;
         }
 
         #gameCanvas {
@@ -70,6 +71,19 @@
             margin: 0 auto;
             width: 100%;
             height: 400px;
+        }
+
+        /* Screen Shake Animation */
+        .shake {
+            animation: shakeAnim 0.2s ease-in-out;
+        }
+
+        @keyframes shakeAnim {
+            0% { transform: translate(0, 0); }
+            25% { transform: translate(-5px, 5px); }
+            50% { transform: translate(5px, -5px); }
+            75% { transform: translate(-3px, -3px); }
+            100% { transform: translate(0, 0); }
         }
 
         /* Quest Overlay */
@@ -291,7 +305,7 @@
 
     <div class="game-wrapper">
         <div class="game-header">
-            <span class="game-title">🎮 2D RPG World Balanced v8.0</span>
+            <span class="game-title">🎮 2D RPG World Masterpiece v9.0</span>
             <span class="watermark">dev Mr. yosie</span>
         </div>
 
@@ -309,6 +323,7 @@
             <div class="stat-item" style="color: #66fcf1;">🗡️ ATK: <span id="txtAtk">12</span></div>
             <div class="stat-item" style="color: #e0aaff;">🛡️ DEF: <span id="txtDef">0</span></div>
             <div class="stat-item" style="color: #00ff66;">✨ Poin: <span id="txtPoints">0</span></div>
+            <div class="stat-item" style="color: #ff00ff;">🐉 Pet: <span id="txtPetStatus">Aktif</span></div>
         </div>
 
         <div class="log-box" id="gameLog"></div>
@@ -390,7 +405,7 @@
         const MAP_WIDTH = 2000;
         const MAP_HEIGHT = 1500;
 
-        // Sound Synthesizer (Web Audio API)
+        // Web Audio Synthesizer
         const AudioCtx = window.AudioContext || window.webkitAudioContext;
         let audioCtx = null;
 
@@ -435,13 +450,19 @@
             }
         }
 
+        function triggerScreenShake() {
+            const container = document.getElementById("canvasContainer");
+            container.classList.add("shake");
+            setTimeout(() => container.classList.remove("shake"), 200);
+        }
+
         function log(msg) {
             const logBox = document.getElementById("gameLog");
             logBox.innerHTML += `<div>> ${msg}</div>`;
             logBox.scrollTop = logBox.scrollHeight;
         }
 
-        // Balanced Stats Player Default
+        // Stats Player
         let player = {
             x: 1000, y: 750,
             size: 24, speed: 5,
@@ -456,9 +477,35 @@
             exp: 0, maxExp: 60,
             potions: 2, manaPotions: 1,
             weapon: "Tangan Kosong",
-            armor: "Pakaian Biasa"
+            armor: "Pakaian Biasa",
+            hasPet: true
         };
 
+        // Companion Pet (Baby Dragon)
+        let pet = {
+            x: 970, y: 750,
+            size: 14,
+            color: "#ff00ff",
+            atk: 8,
+            lastAttackTime: 0
+        };
+
+        // Obstacles (Batu & Pohon)
+        const obstacles = [
+            { x: 900, y: 650, size: 40, type: "tree", color: "#2d6a4f" },
+            { x: 1100, y: 650, size: 40, type: "tree", color: "#2d6a4f" },
+            { x: 900, y: 850, size: 35, type: "rock", color: "#6c757d" },
+            { x: 1100, y: 850, size: 35, type: "rock", color: "#6c757d" },
+            { x: 600, y: 400, size: 50, type: "tree", color: "#2d6a4f" },
+            { x: 1500, y: 1100, size: 45, type: "rock", color: "#6c757d" }
+        ];
+
+        // Dungeon Teleport Portal
+        const portal = {
+            x: 1750, y: 250, size: 40, color: "#9d4edd"
+        };
+
+        let inDungeon = false;
         let gameTime = 0;
         let currentQuest = { targetName: "Slime Hijau", goal: 5, current: 0, rewardGold: 80, rewardExp: 75 };
         let damageTexts = [];
@@ -531,14 +578,14 @@
 
         let currentFilter = 'all';
 
-        // Balanced Monster Scaling
+        // Monster Templates with Elemental Type (Earth, Ice, Lightning, Fire)
         const monsterTemplates = [
-            { name: "Slime Hijau", size: 20, color: "#00ff66", hp: 45, maxHp: 45, atk: 12, exp: 20, gold: 12, speed: 2.0, isBoss: false },
-            { name: "Slime Merah", size: 22, color: "#ff4444", hp: 70, maxHp: 70, atk: 18, exp: 32, gold: 18, speed: 2.2, isBoss: false },
-            { name: "Goblin Liar", size: 24, color: "#ffaa00", hp: 110, maxHp: 110, atk: 26, exp: 50, gold: 28, speed: 2.6, isBoss: false },
-            { name: "Skeleton Guard", size: 26, color: "#e0e0e0", hp: 170, maxHp: 170, atk: 36, exp: 80, gold: 42, speed: 2.3, isBoss: false },
-            { name: "Orc Warrior", size: 30, color: "#9d4edd", hp: 280, maxHp: 280, atk: 52, exp: 130, gold: 75, speed: 2.1, isBoss: false },
-            { name: "Naga Api (BOSS)", size: 48, color: "#d00000", hp: 850, maxHp: 850, atk: 90, exp: 500, gold: 350, speed: 1.8, isBoss: true }
+            { name: "Slime Hijau", size: 20, color: "#00ff66", hp: 45, maxHp: 45, atk: 12, exp: 20, gold: 12, speed: 2.0, elem: "Earth", isBoss: false },
+            { name: "Slime Merah", size: 22, color: "#ff4444", hp: 70, maxHp: 70, atk: 18, exp: 32, gold: 18, speed: 2.2, elem: "Fire", isBoss: false },
+            { name: "Goblin Liar", size: 24, color: "#ffaa00", hp: 110, maxHp: 110, atk: 26, exp: 50, gold: 28, speed: 2.6, elem: "Earth", isBoss: false },
+            { name: "Skeleton Guard", size: 26, color: "#e0e0e0", hp: 170, maxHp: 170, atk: 36, exp: 80, gold: 42, speed: 2.3, elem: "Lightning", isBoss: false },
+            { name: "Orc Warrior", size: 30, color: "#9d4edd", hp: 280, maxHp: 280, atk: 52, exp: 130, gold: 75, speed: 2.1, elem: "Earth", isBoss: false },
+            { name: "Naga Api (BOSS)", size: 48, color: "#d00000", hp: 850, maxHp: 850, atk: 90, exp: 500, gold: 350, speed: 1.8, elem: "Fire", isBoss: true }
         ];
 
         let enemies = [];
@@ -569,25 +616,25 @@
 
         function saveGame(manualAlert = false) {
             try {
-                localStorage.setItem("RPG_MRYOSIE_BALANCED", JSON.stringify(player));
+                localStorage.setItem("RPG_MRYOSIE_v9", JSON.stringify(player));
                 if (manualAlert) log("💾 <b>PROGRESS GAME TERSIMPAN AMAN!</b>");
             } catch (e) { console.error("Save error:", e); }
         }
 
         function loadGame() {
-            const savedData = localStorage.getItem("RPG_MRYOSIE_BALANCED");
+            const savedData = localStorage.getItem("RPG_MRYOSIE_v9");
             if (savedData) {
                 try {
                     const loaded = JSON.parse(savedData);
                     player = { ...player, ...loaded };
-                    log("📂 <b>DATA BALANCED DISIMPAN TERLOAD!</b>");
+                    log("📂 <b>DATA GAME DISIMPAN TERLOAD!</b>");
                 } catch (e) { console.error("Load error:", e); }
             }
         }
 
         function resetGameData() {
             if (confirm("Reset seluruh data game dari awal?")) {
-                localStorage.removeItem("RPG_MRYOSIE_BALANCED");
+                localStorage.removeItem("RPG_MRYOSIE_v9");
                 location.reload();
             }
         }
@@ -598,17 +645,46 @@
 
         window.onload = function() {
             loadGame();
-            log("Selamat datang di **2D RPG World Balanced v8.0**! Dibuat oleh <b style='color:#00ff66;'>dev Mr. yosie</b>.");
-            log("Tingkat kesulitan telah disesuaikan. Berhati-hatilah saat menyerang kelompok monster!");
+            log("Selamat datang di **Masterpiece v9.0**! Dibuat oleh <b style='color:#00ff66;'>dev Mr. yosie</b>.");
             spawnInitialEnemies();
             updateUI();
             setInterval(() => saveGame(false), 10000);
             gameLoop();
         };
 
+        // Collision Check for Movement with Obstacles
+        function checkObstacleCollision(nextX, nextY) {
+            for (let obs of obstacles) {
+                let dist = Math.hypot((nextX + player.size/2) - obs.x, (nextY + player.size/2) - obs.y);
+                if (dist < (player.size/2 + obs.size/2)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
         function movePlayer(dx, dy) {
-            player.x = Math.max(10, Math.min(MAP_WIDTH - player.size, player.x + dx));
-            player.y = Math.max(10, Math.min(MAP_HEIGHT - player.size, player.y + dy));
+            let nextX = Math.max(10, Math.min(MAP_WIDTH - player.size, player.x + dx));
+            let nextY = Math.max(10, Math.min(MAP_HEIGHT - player.size, player.y + dy));
+
+            if (!checkObstacleCollision(nextX, nextY)) {
+                player.x = nextX;
+                player.y = nextY;
+            }
+
+            // Check Teleport Portal to Dungeon
+            let portalDist = Math.hypot((player.x + player.size/2) - portal.x, (player.y + player.size/2) - portal.y);
+            if (portalDist < 40) {
+                if (!inDungeon) {
+                    inDungeon = true;
+                    player.x = 200; player.y = 200;
+                    log("🌀 **BERPINDAH KE SECRET DUNGEON AREA!** Musuh lebih kuat.");
+                } else {
+                    inDungeon = false;
+                    player.x = 1000; player.y = 750;
+                    log("🌀 **KEMBALI KE OVERWORLD MAP.**");
+                }
+            }
         }
 
         function getPlayerAtk() { return player.baseAtk + player.bonusAtk; }
@@ -639,14 +715,13 @@
                     enemy.isAgro = true;
                     playSound('attack');
 
-                    // Balanced Damage Output Formula
                     let rawDmg = Math.floor(getPlayerAtk() * (0.8 + Math.random() * 0.4));
-                    let isCrit = Math.random() < 0.15; // 15% Crit Rate
+                    let isCrit = Math.random() < 0.15;
                     if (isCrit) rawDmg = Math.floor(rawDmg * 1.5);
 
                     enemy.hp -= rawDmg;
                     addDamageText(enemy.x, enemy.y, `${isCrit ? '💥 ' : ''}-${rawDmg}`, isCrit ? "#ff00ff" : "#ffaa00");
-                    log(`Menebas <b style="color:${enemy.color}">${enemy.name}</b> sebesar <b>${rawDmg} DMG</b>!`);
+                    log(`Menebas <b style="color:${enemy.color}">${enemy.name}</b> [${enemy.elem}] sebesar <b>${rawDmg} DMG</b>!`);
 
                     if (enemy.hp <= 0) {
                         enemy.hp = 0;
@@ -682,7 +757,9 @@
 
             player.mp -= 20;
             playSound('skill');
+            triggerScreenShake();
             let hit = false;
+
             enemies.forEach((enemy) => {
                 if (!enemy.alive) return;
                 let dist = Math.hypot((player.x + player.size/2) - (enemy.x + enemy.size/2), (player.y + player.size/2) - (enemy.y + enemy.size/2));
@@ -691,9 +768,17 @@
                     enemy.isAgro = true;
                     
                     let skillDmg = Math.floor(getPlayerAtk() * 1.8);
+                    
+                    // Elemental Weakness Calculation (Ice Vs Fire = 2x Damage)
+                    if (enemy.elem === "Fire") {
+                        skillDmg = Math.floor(skillDmg * 2.0);
+                        addDamageText(enemy.x, enemy.y, `🔥 ELEMENT CRIT! -${skillDmg}`, "#ff0000");
+                        log(`🔥 **ELEMENTAL WEAKNESS!** Damage berlipat ganda pada <b style="color:${enemy.color}">${enemy.name}</b>!`);
+                    } else {
+                        addDamageText(enemy.x, enemy.y, `-${skillDmg} ❄️`, "#00bbf9");
+                    }
+
                     enemy.hp -= skillDmg;
-                    addDamageText(enemy.x, enemy.y, `-${skillDmg} ❄️`, "#00bbf9");
-                    log(`❄️ **TEBASAN ES** menghantam <b style="color:${enemy.color}">${enemy.name}</b> sebesar <b style="color:#00bbf9">${skillDmg} DMG</b>!`);
 
                     if (enemy.hp <= 0) {
                         enemy.hp = 0;
@@ -719,7 +804,36 @@
             updateUI();
         }
 
-        // Balanced Enemy AI & Defense Formula
+        // Pet AI Helper Logic
+        function updatePetAI() {
+            if (!player.hasPet) return;
+
+            // Pet follows player smoothly
+            let dx = (player.x - 20) - pet.x;
+            let dy = (player.y - 20) - pet.y;
+            let dist = Math.hypot(dx, dy);
+
+            if (dist > 15) {
+                pet.x += (dx / dist) * (player.speed * 0.9);
+                pet.y += (dy / dist) * (player.speed * 0.9);
+            }
+
+            // Pet attacks nearest enemy automatically
+            const now = Date.now();
+            if (now - pet.lastAttackTime > 2500) { // Setiap 2.5 detik
+                enemies.forEach(enemy => {
+                    if (!enemy.alive) return;
+                    let pDist = Math.hypot((pet.x) - (enemy.x + enemy.size/2), (pet.y) - (enemy.y + enemy.size/2));
+                    if (pDist < 50) {
+                        enemy.hp -= pet.atk;
+                        enemy.isAgro = true;
+                        addDamageText(enemy.x, enemy.y, `🐉 -${pet.atk}`, "#ff00ff");
+                        pet.lastAttackTime = now;
+                    }
+                });
+            }
+        }
+
         function updateEnemyAI() {
             const now = Date.now();
             let bossNearby = false;
@@ -737,7 +851,6 @@
 
                 if (dist < 36) {
                     if (now - enemy.lastAttackTime > 1100) {
-                        // Formula Reduksi DEF Persen: Damage = Raw * (100 / (100 + DEF))
                         let defStat = getPlayerDef();
                         let defMult = 100 / (100 + defStat);
                         let rawEnemyDmg = Math.floor(enemy.atk * (0.85 + Math.random() * 0.3));
@@ -913,7 +1026,7 @@
             ctx.translate(-cameraX, -cameraY);
 
             // Grid
-            ctx.strokeStyle = "#2b3a55";
+            ctx.strokeStyle = inDungeon ? "#4a154b" : "#2b3a55";
             ctx.lineWidth = 1;
             for (let x = 0; x < MAP_WIDTH; x += 50) {
                 ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, MAP_HEIGHT); ctx.stroke();
@@ -922,9 +1035,29 @@
                 ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(MAP_WIDTH, y); ctx.stroke();
             }
 
-            ctx.strokeStyle = "#ff4444";
+            ctx.strokeStyle = inDungeon ? "#9d4edd" : "#ff4444";
             ctx.lineWidth = 4;
             ctx.strokeRect(0, 0, MAP_WIDTH, MAP_HEIGHT);
+
+            // Draw Teleport Portal
+            ctx.fillStyle = portal.color;
+            ctx.beginPath();
+            ctx.arc(portal.x, portal.y, portal.size/2, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = "#ffffff";
+            ctx.font = "bold 10px sans-serif";
+            ctx.fillText("PORTAL DUNGEON", portal.x - 45, portal.y - 25);
+
+            // Draw Obstacles (Trees & Rocks)
+            obstacles.forEach(obs => {
+                ctx.fillStyle = obs.color;
+                ctx.beginPath();
+                ctx.arc(obs.x, obs.y, obs.size/2, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.strokeStyle = "#ffffff";
+                ctx.lineWidth = 1;
+                ctx.stroke();
+            });
 
             // Monsters
             enemies.forEach(enemy => {
@@ -954,10 +1087,21 @@
 
                 ctx.fillStyle = enemy.isAgro ? "#ff4444" : "#ffffff";
                 ctx.font = "bold 10px sans-serif";
-                ctx.fillText(`${enemy.name}${enemy.isAgro ? ' 💢' : ''}`, enemy.x - 5, enemy.y - 14);
+                ctx.fillText(`${enemy.name} [${enemy.elem}]${enemy.isAgro ? ' 💢' : ''}`, enemy.x - 10, enemy.y - 14);
             });
 
-            // Player
+            // Draw Companion Pet (Baby Dragon)
+            if (player.hasPet) {
+                ctx.fillStyle = pet.color;
+                ctx.beginPath();
+                ctx.arc(pet.x, pet.y, pet.size/2, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.fillStyle = "#ffffff";
+                ctx.font = "bold 9px sans-serif";
+                ctx.fillText("Baby Dragon", pet.x - 20, pet.y - 10);
+            }
+
+            // Draw Player
             ctx.fillStyle = player.color;
             ctx.fillRect(player.x, player.y, player.size, player.size);
             ctx.strokeStyle = "#ffffff";
@@ -1014,6 +1158,7 @@
 
         function gameLoop() {
             updateInput();
+            updatePetAI();
             updateEnemyAI();
             draw();
             requestAnimationFrame(gameLoop);
