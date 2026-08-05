@@ -1,0 +1,1023 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>2D RPG World Balanced - dev Mr. yosie</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+        }
+
+        body {
+            background-color: #0b0c10;
+            color: #c5c6c7;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 10px;
+        }
+
+        .game-wrapper {
+            background-color: #1f2833;
+            border: 2px solid #66fcf1;
+            border-radius: 12px;
+            box-shadow: 0 0 25px rgba(102, 252, 241, 0.25);
+            overflow: hidden;
+            width: 100%;
+            max-width: 850px;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+
+        .game-header {
+            background-color: #0b0c10;
+            padding: 12px 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid #45a29e;
+        }
+
+        .game-title { color: #66fcf1; font-weight: bold; font-size: 18px; }
+
+        .watermark {
+            background-color: #1f2833;
+            color: #00ff66;
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: bold;
+            border: 1px solid #00ff66;
+            box-shadow: 0 0 8px rgba(0, 255, 102, 0.2);
+        }
+
+        #canvasContainer {
+            position: relative;
+            width: 100%;
+        }
+
+        #gameCanvas {
+            background-color: #1c2541;
+            display: block;
+            margin: 0 auto;
+            width: 100%;
+            height: 400px;
+        }
+
+        /* Quest Overlay */
+        .quest-banner {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: rgba(11, 12, 16, 0.85);
+            border: 1px solid #ffaa00;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 11px;
+            color: #ffaa00;
+            pointer-events: none;
+            z-index: 2;
+        }
+
+        /* Boss Alert Overlay */
+        .boss-warning {
+            display: none;
+            position: absolute;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(255, 0, 0, 0.85);
+            color: #fff;
+            border: 1px solid #ff4444;
+            padding: 6px 16px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+            letter-spacing: 1px;
+            animation: blink 1s infinite;
+            pointer-events: none;
+            z-index: 2;
+        }
+
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.4; }
+        }
+
+        .status-bar {
+            background-color: #0b0c10;
+            padding: 8px 12px;
+            display: flex;
+            justify-content: space-between;
+            font-size: 12px;
+            font-weight: bold;
+            border-bottom: 1px solid #1f2833;
+            flex-wrap: wrap;
+            gap: 5px;
+        }
+
+        .stat-item { display: flex; align-items: center; gap: 4px; }
+
+        .log-box {
+            background-color: #0b0c10;
+            color: #45a29e;
+            font-family: 'Courier New', Courier, monospace;
+            padding: 8px 12px;
+            height: 80px;
+            overflow-y: auto;
+            font-size: 12px;
+            border-bottom: 1px solid #1f2833;
+        }
+
+        .controls-panel {
+            padding: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background-color: #1f2833;
+        }
+
+        .d-pad {
+            display: grid;
+            grid-template-columns: repeat(3, 40px);
+            grid-template-rows: repeat(3, 40px);
+            gap: 4px;
+        }
+
+        .btn-ctrl {
+            background-color: #45a29e;
+            color: #0b0c10;
+            border: none;
+            border-radius: 6px;
+            font-weight: bold;
+            font-size: 16px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .btn-ctrl:active { background-color: #66fcf1; }
+
+        .action-btns {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 6px;
+            width: 380px;
+        }
+
+        .btn-act {
+            background-color: #66fcf1;
+            color: #0b0c10;
+            border: none;
+            padding: 8px;
+            border-radius: 6px;
+            font-weight: bold;
+            font-size: 11px;
+            cursor: pointer;
+        }
+
+        .btn-act:active { background-color: #45a29e; }
+        .btn-shop { background-color: #ffaa00; }
+        .btn-skill { background-color: #00bbf9; color: #fff; }
+        .btn-stats { background-color: #e0aaff; }
+        .btn-save { background-color: #00ff66; color: #000; }
+        .btn-reset { background-color: #ff4444; color: #fff; }
+
+        /* Modals */
+        .modal-overlay {
+            display: none;
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background-color: rgba(0, 0, 0, 0.92);
+            z-index: 10;
+            flex-direction: column;
+            padding: 15px;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            border-bottom: 2px solid #ffaa00;
+            padding-bottom: 8px;
+        }
+
+        .modal-title { color: #ffaa00; font-size: 16px; font-weight: bold; }
+        .btn-close {
+            background-color: #ff4444; color: white; border: none;
+            padding: 4px 12px; border-radius: 4px; cursor: pointer; font-weight: bold;
+        }
+
+        .shop-tabs {
+            display: flex;
+            gap: 5px;
+            margin-bottom: 10px;
+            overflow-x: auto;
+            padding-bottom: 5px;
+        }
+
+        .btn-tab {
+            background-color: #1a1a2e;
+            color: #888;
+            border: 1px solid #333;
+            padding: 6px 12px;
+            border-radius: 4px;
+            font-size: 11px;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+
+        .btn-tab.active { background-color: #ffaa00; color: #000; font-weight: bold; }
+
+        .shop-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            overflow-y: auto;
+            flex: 1;
+            padding-right: 5px;
+        }
+
+        .shop-item {
+            background-color: #1a1a2e;
+            border: 1px solid #333;
+            padding: 8px 12px;
+            border-radius: 6px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .shop-item-info { font-size: 12px; }
+        .shop-item-name { color: #66fcf1; font-weight: bold; }
+        .btn-buy {
+            background-color: #00ff66; color: #000; border: none;
+            padding: 6px 12px; border-radius: 4px; font-weight: bold; cursor: pointer;
+            font-size: 11px;
+        }
+
+        .stat-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            background-color: #1a1a2e;
+            border-radius: 6px;
+            margin-bottom: 8px;
+        }
+
+        .btn-add-stat {
+            background-color: #00ff66;
+            color: #000;
+            border: none;
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="game-wrapper">
+        <div class="game-header">
+            <span class="game-title">🎮 2D RPG World Balanced v8.0</span>
+            <span class="watermark">dev Mr. yosie</span>
+        </div>
+
+        <div id="canvasContainer">
+            <canvas id="gameCanvas" width="750" height="400"></canvas>
+            <div class="quest-banner" id="questBanner">🎯 Quest: Kalahkan 5 Slime Hijau (0/5)</div>
+            <div class="boss-warning" id="bossWarning">⚠️ PERINGATAN: NAGA API (BOSS) DI DEKATMU!</div>
+        </div>
+
+        <div class="status-bar">
+            <div class="stat-item">⭐ Lvl: <span id="txtLvl">1</span></div>
+            <div class="stat-item" style="color: #ff4444;">❤️ HP: <span id="txtHp">100/100</span></div>
+            <div class="stat-item" style="color: #00bbf9;">🔷 MP: <span id="txtMp">40/40</span></div>
+            <div class="stat-item" style="color: #ffaa00;">💰 Gold: <span id="txtGold">150</span></div>
+            <div class="stat-item" style="color: #66fcf1;">🗡️ ATK: <span id="txtAtk">12</span></div>
+            <div class="stat-item" style="color: #e0aaff;">🛡️ DEF: <span id="txtDef">0</span></div>
+            <div class="stat-item" style="color: #00ff66;">✨ Poin: <span id="txtPoints">0</span></div>
+        </div>
+
+        <div class="log-box" id="gameLog"></div>
+
+        <div class="controls-panel">
+            <div class="d-pad">
+                <div></div>
+                <button class="btn-ctrl" onclick="movePlayer(0, -12)">▲</button>
+                <div></div>
+                <button class="btn-ctrl" onclick="movePlayer(-12, 0)">◄</button>
+                <div style="background: #0b0c10; border-radius: 4px;"></div>
+                <button class="btn-ctrl" onclick="movePlayer(12, 0)">►</button>
+                <div></div>
+                <button class="btn-ctrl" onclick="movePlayer(0, 12)">▼</button>
+                <div></div>
+            </div>
+
+            <div class="action-btns">
+                <button class="btn-act" onclick="attackNearestEnemy()">⚔️ SERANG (Spasi)</button>
+                <button class="btn-act btn-skill" onclick="useSkill()">💥 ES SKILL (20 MP)</button>
+                <button class="btn-act btn-stats" onclick="openStatsModal()">📊 STATUS POIN</button>
+                <button class="btn-act" style="background:#ff4444; color:#fff;" onclick="usePotion()">🧪 HP POT (<span id="txtPotCount">2</span>)</button>
+                <button class="btn-act" style="background:#00bbf9; color:#fff;" onclick="useManaPotion()">🔷 MP POT (<span id="txtManaPotCount">1</span>)</button>
+                <button class="btn-act btn-shop" onclick="openShop()">🛒 TOKO (55 ITEMS)</button>
+                <button class="btn-act btn-save" style="grid-column: span 2;" onclick="saveGame(true)">💾 SAVE DATA</button>
+                <button class="btn-act btn-reset" onclick="resetGameData()">🔄 RESET DATA</button>
+            </div>
+        </div>
+
+        <!-- Modal Shop -->
+        <div class="modal-overlay" id="shopModal">
+            <div class="modal-header">
+                <span class="modal-title">🛒 TOKO PERLENGKAPAN & KEBUTUHAN</span>
+                <button class="btn-close" onclick="closeShop()">X</button>
+            </div>
+            
+            <div class="shop-tabs">
+                <button class="btn-tab active" onclick="filterShop('all', this)">Semua (55)</button>
+                <button class="btn-tab" onclick="filterShop('potion', this)">Potion & Konsumsi</button>
+                <button class="btn-tab" onclick="filterShop('weapon', this)">Senjata</button>
+                <button class="btn-tab" onclick="filterShop('armor', this)">Armor & Tameng</button>
+                <button class="btn-tab" onclick="filterShop('accessory', this)">Cincin & Aksesori</button>
+            </div>
+
+            <div class="shop-list" id="shopList"></div>
+        </div>
+
+        <!-- Modal Stats Distribution -->
+        <div class="modal-overlay" id="statsModal">
+            <div class="modal-header">
+                <span class="modal-title">📊 ALOKASI POIN STATUS</span>
+                <button class="btn-close" onclick="closeStatsModal()">X</button>
+            </div>
+            <div style="margin-bottom: 15px; color: #00ff66;">Poin Tersedia: <b id="modalStatPoints">0</b></div>
+            
+            <div class="stat-row">
+                <div>💪 STR (Base ATK +2)</div>
+                <button class="btn-add-stat" onclick="addStat('str')">+ Tambah</button>
+            </div>
+            <div class="stat-row">
+                <div>🛡️ VIT (Base DEF +1 & HP +10)</div>
+                <button class="btn-add-stat" onclick="addStat('vit')">+ Tambah</button>
+            </div>
+            <div class="stat-row">
+                <div>🔷 INT (Max MP +10)</div>
+                <button class="btn-add-stat" onclick="addStat('int')">+ Tambah</button>
+            </div>
+            <div class="stat-row">
+                <div>💨 AGI (Speed +0.3)</div>
+                <button class="btn-add-stat" onclick="addStat('agi')">+ Tambah</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById("gameCanvas");
+        const ctx = canvas.getContext("2d");
+
+        const MAP_WIDTH = 2000;
+        const MAP_HEIGHT = 1500;
+
+        // Sound Synthesizer (Web Audio API)
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        let audioCtx = null;
+
+        function playSound(type) {
+            if (!audioCtx) audioCtx = new AudioCtx();
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+
+            const now = audioCtx.currentTime;
+
+            if (type === 'attack') {
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(300, now);
+                osc.frequency.exponentialRampToValueAtTime(80, now + 0.1);
+                gain.gain.setValueAtTime(0.2, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+                osc.start(now); osc.stop(now + 0.1);
+            } else if (type === 'skill') {
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(500, now);
+                osc.frequency.exponentialRampToValueAtTime(120, now + 0.25);
+                gain.gain.setValueAtTime(0.3, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.25);
+                osc.start(now); osc.stop(now + 0.25);
+            } else if (type === 'potion') {
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(350, now);
+                osc.frequency.exponentialRampToValueAtTime(700, now + 0.2);
+                gain.gain.setValueAtTime(0.2, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
+                osc.start(now); osc.stop(now + 0.2);
+            } else if (type === 'levelup') {
+                osc.type = 'square';
+                osc.frequency.setValueAtTime(523.25, now);
+                osc.frequency.setValueAtTime(659.25, now + 0.1);
+                osc.frequency.setValueAtTime(783.99, now + 0.2);
+                gain.gain.setValueAtTime(0.25, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.35);
+                osc.start(now); osc.stop(now + 0.35);
+            }
+        }
+
+        function log(msg) {
+            const logBox = document.getElementById("gameLog");
+            logBox.innerHTML += `<div>> ${msg}</div>`;
+            logBox.scrollTop = logBox.scrollHeight;
+        }
+
+        // Balanced Stats Player Default
+        let player = {
+            x: 1000, y: 750,
+            size: 24, speed: 5,
+            color: "#66fcf1",
+            level: 1,
+            hp: 100, maxHp: 100,
+            mp: 40, maxMp: 40,
+            baseAtk: 12, bonusAtk: 0,
+            baseDef: 0, bonusDef: 0,
+            statPoints: 0,
+            gold: 150,
+            exp: 0, maxExp: 60,
+            potions: 2, manaPotions: 1,
+            weapon: "Tangan Kosong",
+            armor: "Pakaian Biasa"
+        };
+
+        let gameTime = 0;
+        let currentQuest = { targetName: "Slime Hijau", goal: 5, current: 0, rewardGold: 80, rewardExp: 75 };
+        let damageTexts = [];
+
+        function addDamageText(x, y, text, color) {
+            damageTexts.push({ x, y, text, color, life: 30 });
+        }
+
+        // Balance Shop Items
+        const shopItems = [
+            { id: 1, name: "HP Potion Kecil (+35 HP)", cost: 20, cat: "potion", type: "pot_hp", val: 35 },
+            { id: 2, name: "HP Potion Sedang (+70 HP)", cost: 45, cat: "potion", type: "pot_hp", val: 70 },
+            { id: 3, name: "HP Potion Besar (+120 HP)", cost: 85, cat: "potion", type: "pot_hp", val: 120 },
+            { id: 4, name: "Elixir Darah Murni (+220 HP)", cost: 180, cat: "potion", type: "pot_hp", val: 220 },
+            { id: 5, name: "MP Potion Kecil (+25 MP)", cost: 18, cat: "potion", type: "pot_mp", val: 25 },
+            { id: 6, name: "MP Potion Sedang (+50 MP)", cost: 40, cat: "potion", type: "pot_mp", val: 50 },
+            { id: 7, name: "MP Potion Besar (+90 MP)", cost: 75, cat: "potion", type: "pot_mp", val: 90 },
+            { id: 8, name: "Elixir Mana Murni (+160 MP)", cost: 150, cat: "potion", type: "pot_mp", val: 160 },
+            { id: 9, name: "Ramuan Kombinasi (HP+MP 50)", cost: 100, cat: "potion", type: "pot_combo", val: 50 },
+            { id: 10, name: "Darah Naga (+320 HP)", cost: 350, cat: "potion", type: "pot_hp", val: 320 },
+            { id: 11, name: "Ramuan Kecepatan (+1.5 Speed)", cost: 150, cat: "potion", type: "buff_speed", val: 1.5 },
+            { id: 12, name: "Ramuan Kekuatan (+6 Base ATK)", cost: 200, cat: "potion", type: "buff_atk", val: 6 },
+
+            { id: 13, name: "Pisau Belati (+4 ATK)", cost: 50, cat: "weapon", type: "weapon", atk: 4 },
+            { id: 14, name: "Pedang Kayu Latihan (+7 ATK)", cost: 90, cat: "weapon", type: "weapon", atk: 7 },
+            { id: 15, name: "Pedang Besi Pengembara (+10 ATK)", cost: 160, cat: "weapon", type: "weapon", atk: 10 },
+            { id: 16, name: "Tombak Prajurit (+15 ATK)", cost: 250, cat: "weapon", type: "weapon", atk: 15 },
+            { id: 17, name: "Kapak Perunggu (+19 ATK)", cost: 340, cat: "weapon", type: "weapon", atk: 19 },
+            { id: 18, name: "Pedang Baja Tempa (+24 ATK)", cost: 480, cat: "weapon", type: "weapon", atk: 24 },
+            { id: 19, name: "Pedang Perak Suci (+30 ATK)", cost: 650, cat: "weapon", type: "weapon", atk: 30 },
+            { id: 20, name: "Tombak Ksatria Kerajaan (+38 ATK)", cost: 880, cat: "weapon", type: "weapon", atk: 38 },
+            { id: 21, name: "Kapak Ganda Tempur (+45 ATK)", cost: 1150, cat: "weapon", type: "weapon", atk: 45 },
+            { id: 22, name: "Pedang Api Magis (+54 ATK)", cost: 1500, cat: "weapon", type: "weapon", atk: 54 },
+            { id: 23, name: "Pedang Es Pembeku (+65 ATK)", cost: 1950, cat: "weapon", type: "weapon", atk: 65 },
+            { id: 24, name: "Tombak Petir Kuno (+78 ATK)", cost: 2500, cat: "weapon", type: "weapon", atk: 78 },
+            { id: 25, name: "Pedang Pembantai Naga (+92 ATK)", cost: 3200, cat: "weapon", type: "weapon", atk: 92 },
+            { id: 26, name: "Scythe Pencabut Nyawa (+110 ATK)", cost: 4200, cat: "weapon", type: "weapon", atk: 110 },
+            { id: 27, name: "Excalibur Legendaris (+135 ATK)", cost: 6000, cat: "weapon", type: "weapon", atk: 135 },
+
+            { id: 28, name: "Baju Kulit Tipis (+2 DEF)", cost: 45, cat: "armor", type: "armor", def: 2 },
+            { id: 29, name: "Baju Kulit Tebal (+5 DEF)", cost: 95, cat: "armor", type: "armor", def: 5 },
+            { id: 30, name: "Armor Rantai Perunggu (+8 DEF)", cost: 175, cat: "armor", type: "armor", def: 8 },
+            { id: 31, name: "Armor Besi Prajurit (+12 DEF)", cost: 280, cat: "armor", type: "armor", def: 12 },
+            { id: 32, name: "Perisai Kayu Bulat (+4 DEF)", cost: 80, cat: "armor", type: "armor", def: 4 },
+            { id: 33, name: "Perisai Besi Menara (+10 DEF)", cost: 220, cat: "armor", type: "armor", def: 10 },
+            { id: 34, name: "Armor Baja Ksatria (+18 DEF)", cost: 450, cat: "armor", type: "armor", def: 18 },
+            { id: 35, name: "Armor Perak Kerajaan (+25 DEF)", cost: 680, cat: "armor", type: "armor", def: 25 },
+            { id: 36, name: "Helm Tempur Besi (+6 DEF)", cost: 140, cat: "armor", type: "armor", def: 6 },
+            { id: 37, name: "Jubah Penyihir (+10 DEF)", cost: 300, cat: "armor", type: "armor", def: 10 },
+            { id: 38, name: "Armor Paladin Suci (+34 DEF)", cost: 980, cat: "armor", type: "armor", def: 34 },
+            { id: 39, name: "Armor Sisik Naga (+45 DEF)", cost: 1450, cat: "armor", type: "armor", def: 45 },
+            { id: 40, name: "Perisai Aegis Mistik (+28 DEF)", cost: 850, cat: "armor", type: "armor", def: 28 },
+            { id: 41, name: "Armor Titan Kegelapan (+60 DEF)", cost: 2200, cat: "armor", type: "armor", def: 60 },
+            { id: 42, name: "Armor Dewa Pelindung (+80 DEF)", cost: 4500, cat: "armor", type: "armor", def: 80 },
+
+            { id: 43, name: "Cincin Kayu Keberuntungan (+2 ATK)", cost: 60, cat: "accessory", type: "acc", atk: 2, def: 0 },
+            { id: 44, name: "Cincin Besi Bertuah (+3 ATK & +1 DEF)", cost: 110, cat: "accessory", type: "acc", atk: 3, def: 1 },
+            { id: 45, name: "Cincin Batu Merah (+6 ATK)", cost: 220, cat: "accessory", type: "acc", atk: 6, def: 0 },
+            { id: 46, name: "Cincin Batu Biru (+15 Max MP)", cost: 180, cat: "accessory", type: "acc_mp", mp: 15 },
+            { id: 47, name: "Cincin Batu Hijau (+25 Max HP)", cost: 200, cat: "accessory", type: "acc_hp", hp: 25 },
+            { id: 48, name: "Kalung Pelindung (+4 DEF)", cost: 160, cat: "accessory", type: "acc", atk: 0, def: 4 },
+            { id: 49, name: "Cincin Perak Murni (+10 ATK & +2 DEF)", cost: 380, cat: "accessory", type: "acc", atk: 10, def: 2 },
+            { id: 50, name: "Kalung Permata Mistik (+15 ATK & +3 DEF)", cost: 600, cat: "accessory", type: "acc", atk: 15, def: 3 },
+            { id: 51, name: "Cincin Raja Vampir (+22 ATK & +4 DEF)", cost: 1100, cat: "accessory", type: "acc", atk: 22, def: 4 },
+            { id: 52, name: "Kalung Jantung Naga (+60 Max HP)", cost: 1350, cat: "accessory", type: "acc_hp", hp: 60 },
+            { id: 53, name: "Cincin Anubis (+30 ATK & +6 DEF)", cost: 1800, cat: "accessory", type: "acc", atk: 30, def: 6 },
+            { id: 54, name: "Azimat Penguasa Elemen (+38 ATK & +8 DEF)", cost: 2600, cat: "accessory", type: "acc", atk: 38, def: 8 },
+            { id: 55, name: "Mahkota Dewa Abadi (+50 ATK & +20 DEF)", cost: 5500, cat: "accessory", type: "acc", atk: 50, def: 20 }
+        ];
+
+        let currentFilter = 'all';
+
+        // Balanced Monster Scaling
+        const monsterTemplates = [
+            { name: "Slime Hijau", size: 20, color: "#00ff66", hp: 45, maxHp: 45, atk: 12, exp: 20, gold: 12, speed: 2.0, isBoss: false },
+            { name: "Slime Merah", size: 22, color: "#ff4444", hp: 70, maxHp: 70, atk: 18, exp: 32, gold: 18, speed: 2.2, isBoss: false },
+            { name: "Goblin Liar", size: 24, color: "#ffaa00", hp: 110, maxHp: 110, atk: 26, exp: 50, gold: 28, speed: 2.6, isBoss: false },
+            { name: "Skeleton Guard", size: 26, color: "#e0e0e0", hp: 170, maxHp: 170, atk: 36, exp: 80, gold: 42, speed: 2.3, isBoss: false },
+            { name: "Orc Warrior", size: 30, color: "#9d4edd", hp: 280, maxHp: 280, atk: 52, exp: 130, gold: 75, speed: 2.1, isBoss: false },
+            { name: "Naga Api (BOSS)", size: 48, color: "#d00000", hp: 850, maxHp: 850, atk: 90, exp: 500, gold: 350, speed: 1.8, isBoss: true }
+        ];
+
+        let enemies = [];
+
+        function spawnInitialEnemies() {
+            for (let i = 0; i < 40; i++) {
+                let template = monsterTemplates[Math.floor(Math.random() * (monsterTemplates.length - 1))];
+                let rx = Math.random() * (MAP_WIDTH - 120) + 60;
+                let ry = Math.random() * (MAP_HEIGHT - 120) + 60;
+                enemies.push({
+                    id: Date.now() + Math.random(),
+                    x: rx, y: ry,
+                    ...JSON.parse(JSON.stringify(template)),
+                    alive: true,
+                    isAgro: false,
+                    lastAttackTime: 0
+                });
+            }
+            enemies.push({
+                id: Date.now() + 999,
+                x: 1800, y: 1300,
+                ...JSON.parse(JSON.stringify(monsterTemplates[5])),
+                alive: true,
+                isAgro: false,
+                lastAttackTime: 0
+            });
+        }
+
+        function saveGame(manualAlert = false) {
+            try {
+                localStorage.setItem("RPG_MRYOSIE_BALANCED", JSON.stringify(player));
+                if (manualAlert) log("💾 <b>PROGRESS GAME TERSIMPAN AMAN!</b>");
+            } catch (e) { console.error("Save error:", e); }
+        }
+
+        function loadGame() {
+            const savedData = localStorage.getItem("RPG_MRYOSIE_BALANCED");
+            if (savedData) {
+                try {
+                    const loaded = JSON.parse(savedData);
+                    player = { ...player, ...loaded };
+                    log("📂 <b>DATA BALANCED DISIMPAN TERLOAD!</b>");
+                } catch (e) { console.error("Load error:", e); }
+            }
+        }
+
+        function resetGameData() {
+            if (confirm("Reset seluruh data game dari awal?")) {
+                localStorage.removeItem("RPG_MRYOSIE_BALANCED");
+                location.reload();
+            }
+        }
+
+        const keys = {};
+        window.addEventListener("keydown", e => { keys[e.key] = true; });
+        window.addEventListener("keyup", e => { keys[e.key] = false; });
+
+        window.onload = function() {
+            loadGame();
+            log("Selamat datang di **2D RPG World Balanced v8.0**! Dibuat oleh <b style='color:#00ff66;'>dev Mr. yosie</b>.");
+            log("Tingkat kesulitan telah disesuaikan. Berhati-hatilah saat menyerang kelompok monster!");
+            spawnInitialEnemies();
+            updateUI();
+            setInterval(() => saveGame(false), 10000);
+            gameLoop();
+        };
+
+        function movePlayer(dx, dy) {
+            player.x = Math.max(10, Math.min(MAP_WIDTH - player.size, player.x + dx));
+            player.y = Math.max(10, Math.min(MAP_HEIGHT - player.size, player.y + dy));
+        }
+
+        function getPlayerAtk() { return player.baseAtk + player.bonusAtk; }
+        function getPlayerDef() { return player.baseDef + player.bonusDef; }
+
+        function checkQuestProgress(enemyName) {
+            if (enemyName === currentQuest.targetName) {
+                currentQuest.current++;
+                if (currentQuest.current >= currentQuest.goal) {
+                    player.gold += currentQuest.rewardGold;
+                    player.exp += currentQuest.rewardExp;
+                    log(`🎉 <b>QUEST SELESAI!</b> +${currentQuest.rewardGold} Gold & +${currentQuest.rewardExp} EXP.`);
+                    currentQuest.current = 0;
+                    checkLevelUp();
+                }
+                document.getElementById("questBanner").innerText = `🎯 Quest: Kalahkan ${currentQuest.goal} ${currentQuest.targetName} (${currentQuest.current}/${currentQuest.goal})`;
+            }
+        }
+
+        function attackNearestEnemy() {
+            let hit = false;
+            enemies.forEach((enemy) => {
+                if (!enemy.alive) return;
+                let dist = Math.hypot((player.x + player.size/2) - (enemy.x + enemy.size/2), (player.y + player.size/2) - (enemy.y + enemy.size/2));
+                
+                if (dist < 55) {
+                    hit = true;
+                    enemy.isAgro = true;
+                    playSound('attack');
+
+                    // Balanced Damage Output Formula
+                    let rawDmg = Math.floor(getPlayerAtk() * (0.8 + Math.random() * 0.4));
+                    let isCrit = Math.random() < 0.15; // 15% Crit Rate
+                    if (isCrit) rawDmg = Math.floor(rawDmg * 1.5);
+
+                    enemy.hp -= rawDmg;
+                    addDamageText(enemy.x, enemy.y, `${isCrit ? '💥 ' : ''}-${rawDmg}`, isCrit ? "#ff00ff" : "#ffaa00");
+                    log(`Menebas <b style="color:${enemy.color}">${enemy.name}</b> sebesar <b>${rawDmg} DMG</b>!`);
+
+                    if (enemy.hp <= 0) {
+                        enemy.hp = 0;
+                        enemy.alive = false;
+                        enemy.isAgro = false;
+                        log(`💥 <b style="color:${enemy.color}">${enemy.name}</b> tewas! +${enemy.gold} Gold & +${enemy.exp} EXP.`);
+                        player.gold += enemy.gold;
+                        player.exp += enemy.exp;
+                        checkQuestProgress(enemy.name);
+                        checkLevelUp();
+                        saveGame(false);
+
+                        setTimeout(() => {
+                            enemy.hp = enemy.maxHp;
+                            enemy.x = Math.random() * (MAP_WIDTH - 120) + 60;
+                            enemy.y = Math.random() * (MAP_HEIGHT - 120) + 60;
+                            enemy.alive = true;
+                            enemy.isAgro = false;
+                        }, 5000);
+                    }
+                }
+            });
+
+            if (!hit) log("Sabetan pedang meleset! Tidak ada musuh di dekatmu.");
+            updateUI();
+        }
+
+        function useSkill() {
+            if (player.mp < 20) {
+                log("MP tidak cukup! Butuh 20 MP untuk Skill Es.");
+                return;
+            }
+
+            player.mp -= 20;
+            playSound('skill');
+            let hit = false;
+            enemies.forEach((enemy) => {
+                if (!enemy.alive) return;
+                let dist = Math.hypot((player.x + player.size/2) - (enemy.x + enemy.size/2), (player.y + player.size/2) - (enemy.y + enemy.size/2));
+                if (dist < 90) {
+                    hit = true;
+                    enemy.isAgro = true;
+                    
+                    let skillDmg = Math.floor(getPlayerAtk() * 1.8);
+                    enemy.hp -= skillDmg;
+                    addDamageText(enemy.x, enemy.y, `-${skillDmg} ❄️`, "#00bbf9");
+                    log(`❄️ **TEBASAN ES** menghantam <b style="color:${enemy.color}">${enemy.name}</b> sebesar <b style="color:#00bbf9">${skillDmg} DMG</b>!`);
+
+                    if (enemy.hp <= 0) {
+                        enemy.hp = 0;
+                        enemy.alive = false;
+                        enemy.isAgro = false;
+                        log(`💥 <b style="color:${enemy.color}">${enemy.name}</b> hancur! +${enemy.gold} Gold & +${enemy.exp} EXP.`);
+                        player.gold += enemy.gold;
+                        player.exp += enemy.exp;
+                        checkQuestProgress(enemy.name);
+                        checkLevelUp();
+                        saveGame(false);
+
+                        setTimeout(() => {
+                            enemy.hp = enemy.maxHp;
+                            enemy.alive = true;
+                            enemy.isAgro = false;
+                        }, 5000);
+                    }
+                }
+            });
+
+            if (!hit) log("Skill Es dirilis tetapi tidak mengenai musuh.");
+            updateUI();
+        }
+
+        // Balanced Enemy AI & Defense Formula
+        function updateEnemyAI() {
+            const now = Date.now();
+            let bossNearby = false;
+
+            enemies.forEach(enemy => {
+                if (!enemy.alive) return;
+
+                let dx = (player.x + player.size/2) - (enemy.x + enemy.size/2);
+                let dy = (player.y + player.size/2) - (enemy.y + enemy.size/2);
+                let dist = Math.hypot(dx, dy);
+
+                if (enemy.isBoss && dist < 350) bossNearby = true;
+
+                if (!enemy.isAgro) return;
+
+                if (dist < 36) {
+                    if (now - enemy.lastAttackTime > 1100) {
+                        // Formula Reduksi DEF Persen: Damage = Raw * (100 / (100 + DEF))
+                        let defStat = getPlayerDef();
+                        let defMult = 100 / (100 + defStat);
+                        let rawEnemyDmg = Math.floor(enemy.atk * (0.85 + Math.random() * 0.3));
+                        let actualDmg = Math.max(2, Math.floor(rawEnemyDmg * defMult));
+
+                        player.hp -= actualDmg;
+                        enemy.lastAttackTime = now;
+                        addDamageText(player.x, player.y, `-${actualDmg}`, "#ff4444");
+                        log(`⚠️ <b style="color:${enemy.color}">${enemy.name}</b> menyerang Anda sebesar <b style="color:#ff4444">${actualDmg} DMG</b>!`);
+
+                        if (player.hp <= 0) {
+                            player.hp = player.maxHp;
+                            player.mp = player.maxMp;
+                            player.x = 1000; player.y = 750;
+                            log("💀 Anda gugur! Respawn di pusat peta...");
+                            enemies.forEach(e => e.isAgro = false);
+                            saveGame(false);
+                        }
+                        updateUI();
+                    }
+                } else {
+                    enemy.x += (dx / dist) * enemy.speed;
+                    enemy.y += (dy / dist) * enemy.speed;
+                }
+            });
+
+            document.getElementById("bossWarning").style.display = bossNearby ? "block" : "none";
+        }
+
+        function usePotion() {
+            if (player.potions > 0 && player.hp < player.maxHp) {
+                player.potions--;
+                let healVal = 35;
+                player.hp = Math.min(player.maxHp, player.hp + healVal);
+                playSound('potion');
+                addDamageText(player.x, player.y, `+${healVal} HP`, "#00ff66");
+                log(`🧪 Meminum HP Potion (+${healVal} HP).`);
+                updateUI();
+                saveGame(false);
+            }
+        }
+
+        function useManaPotion() {
+            if (player.manaPotions > 0 && player.mp < player.maxMp) {
+                player.manaPotions--;
+                let manaVal = 25;
+                player.mp = Math.min(player.maxMp, player.mp + manaVal);
+                playSound('potion');
+                addDamageText(player.x, player.y, `+${manaVal} MP`, "#00bbf9");
+                log(`🔷 Meminum MP Potion (+${manaVal} MP).`);
+                updateUI();
+                saveGame(false);
+            }
+        }
+
+        function checkLevelUp() {
+            if (player.exp >= player.maxExp) {
+                player.level++;
+                player.exp -= player.maxExp;
+                player.maxExp = Math.floor(player.maxExp * 1.6);
+                player.maxHp += 20; player.hp = player.maxHp;
+                player.maxMp += 10; player.mp = player.maxMp;
+                player.baseAtk += 3;
+                player.statPoints += 3;
+                playSound('levelup');
+                log(`🌟 **LEVEL UP!** Kamu naik ke Level ${player.level}! Mendapatkan +3 Poin Status.`);
+                saveGame(false);
+            }
+        }
+
+        function updateInput() {
+            if (keys["ArrowUp"] || keys["w"] || keys["W"]) movePlayer(0, -player.speed);
+            if (keys["ArrowDown"] || keys["s"] || keys["S"]) movePlayer(0, player.speed);
+            if (keys["ArrowLeft"] || keys["a"] || keys["A"]) movePlayer(-player.speed, 0);
+            if (keys["ArrowRight"] || keys["d"] || keys["D"]) movePlayer(player.speed, 0);
+            if (keys[" "]) { attackNearestEnemy(); keys[" "] = false; }
+        }
+
+        function updateUI() {
+            document.getElementById("txtLvl").innerText = player.level;
+            document.getElementById("txtHp").innerText = `${player.hp}/${player.maxHp}`;
+            document.getElementById("txtMp").innerText = `${player.mp}/${player.maxMp}`;
+            document.getElementById("txtGold").innerText = player.gold;
+            document.getElementById("txtAtk").innerText = `${getPlayerAtk()} (${player.baseAtk}+${player.bonusAtk})`;
+            document.getElementById("txtDef").innerText = `${getPlayerDef()} (${player.baseDef}+${player.bonusDef})`;
+            document.getElementById("txtPotCount").innerText = player.potions;
+            document.getElementById("txtManaPotCount").innerText = player.manaPotions;
+            document.getElementById("txtPoints").innerText = player.statPoints;
+            document.getElementById("modalStatPoints").innerText = player.statPoints;
+        }
+
+        function openStatsModal() { document.getElementById("statsModal").style.display = "flex"; }
+        function closeStatsModal() { document.getElementById("statsModal").style.display = "none"; }
+
+        function addStat(type) {
+            if (player.statPoints <= 0) {
+                log("Poin status Anda habis!");
+                return;
+            }
+            player.statPoints--;
+            if (type === 'str') { player.baseAtk += 2; log("💪 Base ATK +2."); }
+            else if (type === 'vit') { player.baseDef += 1; player.maxHp += 10; player.hp += 10; log("🛡️ Base DEF +1 & Max HP +10."); }
+            else if (type === 'int') { player.maxMp += 10; player.mp += 10; log("🔷 Max MP +10."); }
+            else if (type === 'agi') { player.speed += 0.3; log("💨 Speed +0.3."); }
+            updateUI();
+            saveGame(false);
+        }
+
+        function openShop() { renderShopList(); document.getElementById("shopModal").style.display = "flex"; }
+        function closeShop() { document.getElementById("shopModal").style.display = "none"; }
+
+        function filterShop(category, btnElement) {
+            currentFilter = category;
+            const buttons = document.querySelectorAll('.btn-tab');
+            buttons.forEach(b => b.classList.remove('active'));
+            if(btnElement) btnElement.classList.add('active');
+            renderShopList();
+        }
+
+        function renderShopList() {
+            const listEl = document.getElementById("shopList");
+            listEl.innerHTML = "";
+            const filteredItems = currentFilter === 'all' ? shopItems : shopItems.filter(i => i.cat === currentFilter);
+            filteredItems.forEach(item => {
+                const row = document.createElement("div");
+                row.className = "shop-item";
+                row.innerHTML = `
+                    <div class="shop-item-info">
+                        <div class="shop-item-name">${item.name}</div>
+                        <div style="color:#ffaa00">Harga: ${item.cost} Gold</div>
+                    </div>
+                    <button class="btn-buy" onclick="buyShopItem(${item.id})">Beli</button>
+                `;
+                listEl.appendChild(row);
+            });
+        }
+
+        function buyShopItem(id) {
+            const item = shopItems.find(i => i.id === id);
+            if (!item) return;
+
+            if (player.gold >= item.cost) {
+                player.gold -= item.cost;
+                if (item.type === "pot_hp") { player.potions++; }
+                else if (item.type === "pot_mp") { player.manaPotions++; }
+                else if (item.type === "pot_combo") { player.potions++; player.manaPotions++; }
+                else if (item.type === "buff_speed") { player.speed += item.val; log(`💨 Speed +${item.val}!`); }
+                else if (item.type === "buff_atk") { player.baseAtk += item.val; log(`💪 Base ATK +${item.val}!`); }
+                else if (item.type === "weapon") { player.bonusAtk = item.atk; player.weapon = item.name; log(`🗡️ Terpasang: ${item.name}`); } 
+                else if (item.type === "armor") { player.bonusDef = item.def; player.armor = item.name; log(`🛡️ Terpasang: ${item.name}`); }
+                else if (item.type === "acc") { player.bonusAtk += item.atk || 0; player.bonusDef += item.def || 0; log(`💍 Terpasang: ${item.name}`); }
+                else if (item.type === "acc_hp") { player.maxHp += item.hp; player.hp += item.hp; }
+                else if (item.type === "acc_mp") { player.maxMp += item.mp; player.mp += item.mp; }
+
+                log(`🛒 Membeli <b>${item.name}</b>.`);
+                updateUI();
+                saveGame(false);
+                renderShopList();
+            } else {
+                log("Gold kamu tidak cukup!");
+            }
+        }
+
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            let cameraX = player.x - canvas.width / 2;
+            let cameraY = player.y - canvas.height / 2;
+            cameraX = Math.max(0, Math.min(MAP_WIDTH - canvas.width, cameraX));
+            cameraY = Math.max(0, Math.min(MAP_HEIGHT - canvas.height, cameraY));
+
+            ctx.save();
+            ctx.translate(-cameraX, -cameraY);
+
+            // Grid
+            ctx.strokeStyle = "#2b3a55";
+            ctx.lineWidth = 1;
+            for (let x = 0; x < MAP_WIDTH; x += 50) {
+                ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, MAP_HEIGHT); ctx.stroke();
+            }
+            for (let y = 0; y < MAP_HEIGHT; y += 50) {
+                ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(MAP_WIDTH, y); ctx.stroke();
+            }
+
+            ctx.strokeStyle = "#ff4444";
+            ctx.lineWidth = 4;
+            ctx.strokeRect(0, 0, MAP_WIDTH, MAP_HEIGHT);
+
+            // Monsters
+            enemies.forEach(enemy => {
+                if (!enemy.alive) return;
+
+                ctx.fillStyle = enemy.color;
+                ctx.beginPath();
+                ctx.arc(enemy.x + enemy.size/2, enemy.y + enemy.size/2, enemy.size/2, 0, Math.PI * 2);
+                ctx.fill();
+
+                if (enemy.isAgro) {
+                    ctx.strokeStyle = "#ff0000";
+                    ctx.lineWidth = 3;
+                } else if (enemy.isBoss) {
+                    ctx.strokeStyle = "#ffaa00";
+                    ctx.lineWidth = 3;
+                } else {
+                    ctx.strokeStyle = "#ffffff";
+                    ctx.lineWidth = 1;
+                }
+                ctx.stroke();
+
+                ctx.fillStyle = "#ff4444";
+                ctx.fillRect(enemy.x, enemy.y - 10, enemy.size, 4);
+                ctx.fillStyle = "#00ff66";
+                ctx.fillRect(enemy.x, enemy.y - 10, (enemy.hp / enemy.maxHp) * enemy.size, 4);
+
+                ctx.fillStyle = enemy.isAgro ? "#ff4444" : "#ffffff";
+                ctx.font = "bold 10px sans-serif";
+                ctx.fillText(`${enemy.name}${enemy.isAgro ? ' 💢' : ''}`, enemy.x - 5, enemy.y - 14);
+            });
+
+            // Player
+            ctx.fillStyle = player.color;
+            ctx.fillRect(player.x, player.y, player.size, player.size);
+            ctx.strokeStyle = "#ffffff";
+            ctx.lineWidth = 1;
+            ctx.strokeRect(player.x, player.y, player.size, player.size);
+
+            ctx.fillStyle = "#ffffff";
+            ctx.font = "bold 11px sans-serif";
+            ctx.fillText("HERO", player.x - 2, player.y - 6);
+
+            // Floating Damage Particles
+            damageTexts.forEach((dt, idx) => {
+                ctx.fillStyle = dt.color;
+                ctx.font = "bold 12px sans-serif";
+                ctx.fillText(dt.text, dt.x, dt.y - (30 - dt.life));
+                dt.life--;
+                if (dt.life <= 0) damageTexts.splice(idx, 1);
+            });
+
+            // Night Overlay
+            gameTime = (gameTime + 1) % 3600;
+            let darkness = Math.sin((gameTime / 3600) * Math.PI) * 0.45;
+            if (darkness > 0) {
+                ctx.fillStyle = `rgba(0, 0, 20, ${darkness})`;
+                ctx.fillRect(0, 0, MAP_WIDTH, MAP_HEIGHT);
+            }
+
+            ctx.restore();
+
+            // Mini-Map
+            const mmSize = 100;
+            const mmX = canvas.width - mmSize - 10;
+            const mmY = 10;
+            ctx.fillStyle = "rgba(11, 12, 16, 0.85)";
+            ctx.fillRect(mmX, mmY, mmSize, mmSize);
+            ctx.strokeStyle = "#45a29e";
+            ctx.strokeRect(mmX, mmY, mmSize, mmSize);
+
+            ctx.fillStyle = "#00e5ff";
+            ctx.fillRect(mmX + (player.x / MAP_WIDTH) * mmSize, mmY + (player.y / MAP_HEIGHT) * mmSize, 4, 4);
+
+            enemies.forEach(e => {
+                if (e.alive) {
+                    ctx.fillStyle = e.isBoss ? "#ffaa00" : "#ff4444";
+                    ctx.fillRect(mmX + (e.x / MAP_WIDTH) * mmSize, mmY + (e.y / MAP_HEIGHT) * mmSize, e.isBoss ? 4 : 2, e.isBoss ? 4 : 2);
+                }
+            });
+
+            // Watermark
+            ctx.fillStyle = "rgba(255, 255, 255, 0.35)";
+            ctx.font = "12px Courier New";
+            ctx.fillText("dev Mr. yosie", canvas.width - 110, canvas.height - 10);
+        }
+
+        function gameLoop() {
+            updateInput();
+            updateEnemyAI();
+            draw();
+            requestAnimationFrame(gameLoop);
+        }
+    </script>
+</body>
+</html>
