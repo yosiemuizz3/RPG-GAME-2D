@@ -2,36 +2,38 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>2D RPG World Masterpiece v9.0 - dev Mr. yosie</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>2D RPG World Mobile - dev Mr. yosie</title>
     <style>
         * {
             box-sizing: border-box;
             margin: 0;
             padding: 0;
             user-select: none;
+            -webkit-user-select: none;
+            touch-action: manipulation;
         }
 
         body {
             background-color: #0b0c10;
             color: #c5c6c7;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: center;
+            justify-content: flex-start;
             min-height: 100vh;
-            padding: 10px;
+            padding: 5px;
         }
 
         .game-wrapper {
             background-color: #1f2833;
             border: 2px solid #66fcf1;
-            border-radius: 12px;
-            box-shadow: 0 0 25px rgba(102, 252, 241, 0.25);
+            border-radius: 10px;
+            box-shadow: 0 0 15px rgba(102, 252, 241, 0.25);
             overflow: hidden;
             width: 100%;
-            max-width: 850px;
+            max-width: 600px; /* Ukuran pas untuk layar HP */
             display: flex;
             flex-direction: column;
             position: relative;
@@ -39,83 +41,66 @@
 
         .game-header {
             background-color: #0b0c10;
-            padding: 12px 16px;
+            padding: 8px 12px;
             display: flex;
             justify-content: space-between;
             align-items: center;
             border-bottom: 2px solid #45a29e;
         }
 
-        .game-title { color: #66fcf1; font-weight: bold; font-size: 18px; }
+        .game-title { color: #66fcf1; font-weight: bold; font-size: 15px; }
 
         .watermark {
             background-color: #1f2833;
             color: #00ff66;
-            padding: 4px 10px;
+            padding: 3px 8px;
             border-radius: 6px;
-            font-size: 12px;
+            font-size: 11px;
             font-weight: bold;
             border: 1px solid #00ff66;
-            box-shadow: 0 0 8px rgba(0, 255, 102, 0.2);
         }
 
         #canvasContainer {
             position: relative;
             width: 100%;
-            overflow: hidden;
+            aspect-ratio: 16 / 9; /* Menjaga rasio layar tetap responsif */
+            background-color: #000;
         }
 
         #gameCanvas {
             background-color: #1c2541;
             display: block;
-            margin: 0 auto;
             width: 100%;
-            height: 400px;
+            height: 100%;
         }
 
-        /* Screen Shake Animation */
-        .shake {
-            animation: shakeAnim 0.2s ease-in-out;
-        }
-
-        @keyframes shakeAnim {
-            0% { transform: translate(0, 0); }
-            25% { transform: translate(-5px, 5px); }
-            50% { transform: translate(5px, -5px); }
-            75% { transform: translate(-3px, -3px); }
-            100% { transform: translate(0, 0); }
-        }
-
-        /* Quest Overlay */
         .quest-banner {
             position: absolute;
-            top: 10px;
-            left: 10px;
+            top: 6px;
+            left: 6px;
             background: rgba(11, 12, 16, 0.85);
             border: 1px solid #ffaa00;
-            padding: 6px 12px;
+            padding: 4px 8px;
             border-radius: 6px;
-            font-size: 11px;
+            font-size: 10px;
             color: #ffaa00;
             pointer-events: none;
             z-index: 2;
         }
 
-        /* Boss Alert Overlay */
         .boss-warning {
             display: none;
             position: absolute;
-            top: 10px;
+            top: 6px;
             left: 50%;
             transform: translateX(-50%);
-            background: rgba(255, 0, 0, 0.85);
+            background: rgba(255, 0, 0, 0.9);
             color: #fff;
             border: 1px solid #ff4444;
-            padding: 6px 16px;
-            border-radius: 20px;
-            font-size: 12px;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 10px;
             font-weight: bold;
-            letter-spacing: 1px;
             animation: blink 1s infinite;
             pointer-events: none;
             z-index: 2;
@@ -128,125 +113,140 @@
 
         .status-bar {
             background-color: #0b0c10;
-            padding: 8px 12px;
-            display: flex;
-            justify-content: space-between;
-            font-size: 12px;
+            padding: 6px 10px;
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 4px;
+            font-size: 11px;
             font-weight: bold;
             border-bottom: 1px solid #1f2833;
-            flex-wrap: wrap;
-            gap: 5px;
+            text-align: center;
         }
 
-        .stat-item { display: flex; align-items: center; gap: 4px; }
+        .stat-item { display: flex; align-items: center; justify-content: center; gap: 2px; }
 
         .log-box {
             background-color: #0b0c10;
             color: #45a29e;
-            font-family: 'Courier New', Courier, monospace;
-            padding: 8px 12px;
-            height: 80px;
+            font-family: monospace;
+            padding: 6px 10px;
+            height: 65px;
             overflow-y: auto;
-            font-size: 12px;
+            font-size: 11px;
             border-bottom: 1px solid #1f2833;
         }
 
+        /* Responsive Mobile Control Panel */
         .controls-panel {
-            padding: 10px;
+            padding: 8px;
             display: flex;
             justify-content: space-between;
             align-items: center;
             background-color: #1f2833;
+            gap: 8px;
         }
 
         .d-pad {
             display: grid;
-            grid-template-columns: repeat(3, 40px);
-            grid-template-rows: repeat(3, 40px);
+            grid-template-columns: repeat(3, 48px);
+            grid-template-rows: repeat(3, 48px);
             gap: 4px;
+            flex-shrink: 0;
         }
 
         .btn-ctrl {
             background-color: #45a29e;
             color: #0b0c10;
             border: none;
-            border-radius: 6px;
+            border-radius: 8px;
             font-weight: bold;
-            font-size: 16px;
+            font-size: 20px;
             cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
+            box-shadow: 0 3px 0 #1f2833;
         }
 
-        .btn-ctrl:active { background-color: #66fcf1; }
+        .btn-ctrl:active {
+            background-color: #66fcf1;
+            transform: translateY(2px);
+            box-shadow: 0 1px 0 #1f2833;
+        }
 
         .action-btns {
             display: grid;
-            grid-template-columns: repeat(3, 1fr);
+            grid-template-columns: repeat(2, 1fr);
             gap: 6px;
-            width: 380px;
+            flex-grow: 1;
         }
 
         .btn-act {
             background-color: #66fcf1;
             color: #0b0c10;
             border: none;
-            padding: 8px;
-            border-radius: 6px;
+            padding: 10px 4px;
+            border-radius: 8px;
             font-weight: bold;
             font-size: 11px;
             cursor: pointer;
+            text-align: center;
+            box-shadow: 0 3px 0 rgba(0,0,0,0.3);
         }
 
-        .btn-act:active { background-color: #45a29e; }
+        .btn-act:active {
+            background-color: #45a29e;
+            transform: translateY(2px);
+        }
+
+        .btn-attack { grid-column: span 2; background-color: #ff4444; color: #fff; font-size: 13px; padding: 12px; }
         .btn-shop { background-color: #ffaa00; }
         .btn-skill { background-color: #00bbf9; color: #fff; }
         .btn-stats { background-color: #e0aaff; }
         .btn-save { background-color: #00ff66; color: #000; }
-        .btn-reset { background-color: #ff4444; color: #fff; }
+        .btn-reset { background-color: #888; color: #fff; grid-column: span 2; padding: 6px; font-size: 10px; }
 
-        /* Modals */
+        /* Modals Mobile Friendly */
         .modal-overlay {
             display: none;
             position: absolute;
             top: 0; left: 0; width: 100%; height: 100%;
-            background-color: rgba(0, 0, 0, 0.92);
+            background-color: rgba(0, 0, 0, 0.94);
             z-index: 10;
             flex-direction: column;
-            padding: 15px;
+            padding: 12px;
         }
 
         .modal-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 10px;
+            margin-bottom: 8px;
             border-bottom: 2px solid #ffaa00;
-            padding-bottom: 8px;
+            padding-bottom: 6px;
         }
 
-        .modal-title { color: #ffaa00; font-size: 16px; font-weight: bold; }
+        .modal-title { color: #ffaa00; font-size: 14px; font-weight: bold; }
         .btn-close {
             background-color: #ff4444; color: white; border: none;
-            padding: 4px 12px; border-radius: 4px; cursor: pointer; font-weight: bold;
+            padding: 4px 10px; border-radius: 4px; cursor: pointer; font-weight: bold;
         }
 
         .shop-tabs {
             display: flex;
-            gap: 5px;
-            margin-bottom: 10px;
+            gap: 4px;
+            margin-bottom: 8px;
             overflow-x: auto;
-            padding-bottom: 5px;
+            padding-bottom: 4px;
         }
 
         .btn-tab {
             background-color: #1a1a2e;
             color: #888;
             border: 1px solid #333;
-            padding: 6px 12px;
+            padding: 6px 10px;
             border-radius: 4px;
-            font-size: 11px;
+            font-size: 10px;
             cursor: pointer;
             white-space: nowrap;
         }
@@ -256,45 +256,45 @@
         .shop-list {
             display: flex;
             flex-direction: column;
-            gap: 8px;
+            gap: 6px;
             overflow-y: auto;
             flex: 1;
-            padding-right: 5px;
         }
 
         .shop-item {
             background-color: #1a1a2e;
             border: 1px solid #333;
-            padding: 8px 12px;
+            padding: 8px;
             border-radius: 6px;
             display: flex;
             justify-content: space-between;
             align-items: center;
         }
 
-        .shop-item-info { font-size: 12px; }
+        .shop-item-info { font-size: 11px; }
         .shop-item-name { color: #66fcf1; font-weight: bold; }
         .btn-buy {
             background-color: #00ff66; color: #000; border: none;
-            padding: 6px 12px; border-radius: 4px; font-weight: bold; cursor: pointer;
-            font-size: 11px;
+            padding: 6px 10px; border-radius: 4px; font-weight: bold; cursor: pointer;
+            font-size: 10px;
         }
 
         .stat-row {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 10px;
+            padding: 8px;
             background-color: #1a1a2e;
             border-radius: 6px;
-            margin-bottom: 8px;
+            margin-bottom: 6px;
+            font-size: 12px;
         }
 
         .btn-add-stat {
             background-color: #00ff66;
             color: #000;
             border: none;
-            padding: 4px 10px;
+            padding: 4px 8px;
             border-radius: 4px;
             font-weight: bold;
             cursor: pointer;
@@ -305,25 +305,25 @@
 
     <div class="game-wrapper">
         <div class="game-header">
-            <span class="game-title">🎮 2D RPG World Masterpiece v9.0</span>
+            <span class="game-title">🎮 2D RPG Mobile v10.0</span>
             <span class="watermark">dev Mr. yosie</span>
         </div>
 
         <div id="canvasContainer">
             <canvas id="gameCanvas" width="750" height="400"></canvas>
-            <div class="quest-banner" id="questBanner">🎯 Quest: Kalahkan 5 Slime Hijau (0/5)</div>
-            <div class="boss-warning" id="bossWarning">⚠️ PERINGATAN: NAGA API (BOSS) DI DEKATMU!</div>
+            <div class="quest-banner" id="questBanner">🎯 Quest: Kalahkan 5 Slime (0/5)</div>
+            <div class="boss-warning" id="bossWarning">⚠️ BOSS NAGA DI DEKATMU!</div>
         </div>
 
         <div class="status-bar">
             <div class="stat-item">⭐ Lvl: <span id="txtLvl">1</span></div>
-            <div class="stat-item" style="color: #ff4444;">❤️ HP: <span id="txtHp">100/100</span></div>
-            <div class="stat-item" style="color: #00bbf9;">🔷 MP: <span id="txtMp">40/40</span></div>
-            <div class="stat-item" style="color: #ffaa00;">💰 Gold: <span id="txtGold">150</span></div>
+            <div class="stat-item" style="color: #ff4444;">❤️ <span id="txtHp">100/100</span></div>
+            <div class="stat-item" style="color: #00bbf9;">🔷 <span id="txtMp">40/40</span></div>
+            <div class="stat-item" style="color: #ffaa00;">💰 <span id="txtGold">150</span></div>
             <div class="stat-item" style="color: #66fcf1;">🗡️ ATK: <span id="txtAtk">12</span></div>
             <div class="stat-item" style="color: #e0aaff;">🛡️ DEF: <span id="txtDef">0</span></div>
             <div class="stat-item" style="color: #00ff66;">✨ Poin: <span id="txtPoints">0</span></div>
-            <div class="stat-item" style="color: #ff00ff;">🐉 Pet: <span id="txtPetStatus">Aktif</span></div>
+            <div class="stat-item" style="color: #ff00ff;">🐉 Pet: On</div>
         </div>
 
         <div class="log-box" id="gameLog"></div>
@@ -331,24 +331,24 @@
         <div class="controls-panel">
             <div class="d-pad">
                 <div></div>
-                <button class="btn-ctrl" onclick="movePlayer(0, -12)">▲</button>
+                <button class="btn-ctrl" id="btnUp">▲</button>
                 <div></div>
-                <button class="btn-ctrl" onclick="movePlayer(-12, 0)">◄</button>
+                <button class="btn-ctrl" id="btnLeft">◄</button>
                 <div style="background: #0b0c10; border-radius: 4px;"></div>
-                <button class="btn-ctrl" onclick="movePlayer(12, 0)">►</button>
+                <button class="btn-ctrl" id="btnRight">►</button>
                 <div></div>
-                <button class="btn-ctrl" onclick="movePlayer(0, 12)">▼</button>
+                <button class="btn-ctrl" id="btnDown">▼</button>
                 <div></div>
             </div>
 
             <div class="action-btns">
-                <button class="btn-act" onclick="attackNearestEnemy()">⚔️ SERANG (Spasi)</button>
-                <button class="btn-act btn-skill" onclick="useSkill()">💥 ES SKILL (20 MP)</button>
-                <button class="btn-act btn-stats" onclick="openStatsModal()">📊 STATUS POIN</button>
-                <button class="btn-act" style="background:#ff4444; color:#fff;" onclick="usePotion()">🧪 HP POT (<span id="txtPotCount">2</span>)</button>
-                <button class="btn-act" style="background:#00bbf9; color:#fff;" onclick="useManaPotion()">🔷 MP POT (<span id="txtManaPotCount">1</span>)</button>
-                <button class="btn-act btn-shop" onclick="openShop()">🛒 TOKO (55 ITEMS)</button>
-                <button class="btn-act btn-save" style="grid-column: span 2;" onclick="saveGame(true)">💾 SAVE DATA</button>
+                <button class="btn-act btn-attack" onclick="attackNearestEnemy()">⚔️ SERANG (Pukul)</button>
+                <button class="btn-act btn-skill" onclick="useSkill()">💥 ES SKILL</button>
+                <button class="btn-act btn-stats" onclick="openStatsModal()">📊 STATS</button>
+                <button class="btn-act" style="background:#ff4444; color:#fff;" onclick="usePotion()">🧪 HP (<span id="txtPotCount">2</span>)</button>
+                <button class="btn-act" style="background:#00bbf9; color:#fff;" onclick="useManaPotion()">🔷 MP (<span id="txtManaPotCount">1</span>)</button>
+                <button class="btn-act btn-shop" onclick="openShop()">🛒 TOKO</button>
+                <button class="btn-act btn-save" onclick="saveGame(true)">💾 SAVE</button>
                 <button class="btn-act btn-reset" onclick="resetGameData()">🔄 RESET DATA</button>
             </div>
         </div>
@@ -356,16 +356,16 @@
         <!-- Modal Shop -->
         <div class="modal-overlay" id="shopModal">
             <div class="modal-header">
-                <span class="modal-title">🛒 TOKO PERLENGKAPAN & KEBUTUHAN</span>
+                <span class="modal-title">🛒 TOKO PERLENGKAPAN</span>
                 <button class="btn-close" onclick="closeShop()">X</button>
             </div>
             
             <div class="shop-tabs">
                 <button class="btn-tab active" onclick="filterShop('all', this)">Semua (55)</button>
-                <button class="btn-tab" onclick="filterShop('potion', this)">Potion & Konsumsi</button>
+                <button class="btn-tab" onclick="filterShop('potion', this)">Potion</button>
                 <button class="btn-tab" onclick="filterShop('weapon', this)">Senjata</button>
-                <button class="btn-tab" onclick="filterShop('armor', this)">Armor & Tameng</button>
-                <button class="btn-tab" onclick="filterShop('accessory', this)">Cincin & Aksesori</button>
+                <button class="btn-tab" onclick="filterShop('armor', this)">Armor</button>
+                <button class="btn-tab" onclick="filterShop('accessory', this)">Aksesori</button>
             </div>
 
             <div class="shop-list" id="shopList"></div>
@@ -377,7 +377,7 @@
                 <span class="modal-title">📊 ALOKASI POIN STATUS</span>
                 <button class="btn-close" onclick="closeStatsModal()">X</button>
             </div>
-            <div style="margin-bottom: 15px; color: #00ff66;">Poin Tersedia: <b id="modalStatPoints">0</b></div>
+            <div style="margin-bottom: 10px; color: #00ff66; font-size: 12px;">Poin Tersedia: <b id="modalStatPoints">0</b></div>
             
             <div class="stat-row">
                 <div>💪 STR (Base ATK +2)</div>
@@ -481,16 +481,8 @@
             hasPet: true
         };
 
-        // Companion Pet (Baby Dragon)
-        let pet = {
-            x: 970, y: 750,
-            size: 14,
-            color: "#ff00ff",
-            atk: 8,
-            lastAttackTime: 0
-        };
+        let pet = { x: 970, y: 750, size: 14, color: "#ff00ff", atk: 8, lastAttackTime: 0 };
 
-        // Obstacles (Batu & Pohon)
         const obstacles = [
             { x: 900, y: 650, size: 40, type: "tree", color: "#2d6a4f" },
             { x: 1100, y: 650, size: 40, type: "tree", color: "#2d6a4f" },
@@ -500,10 +492,7 @@
             { x: 1500, y: 1100, size: 45, type: "rock", color: "#6c757d" }
         ];
 
-        // Dungeon Teleport Portal
-        const portal = {
-            x: 1750, y: 250, size: 40, color: "#9d4edd"
-        };
+        const portal = { x: 1750, y: 250, size: 40, color: "#9d4edd" };
 
         let inDungeon = false;
         let gameTime = 0;
@@ -514,7 +503,6 @@
             damageTexts.push({ x, y, text, color, life: 30 });
         }
 
-        // Balance Shop Items
         const shopItems = [
             { id: 1, name: "HP Potion Kecil (+35 HP)", cost: 20, cat: "potion", type: "pot_hp", val: 35 },
             { id: 2, name: "HP Potion Sedang (+70 HP)", cost: 45, cat: "potion", type: "pot_hp", val: 70 },
@@ -578,7 +566,6 @@
 
         let currentFilter = 'all';
 
-        // Monster Templates with Elemental Type (Earth, Ice, Lightning, Fire)
         const monsterTemplates = [
             { name: "Slime Hijau", size: 20, color: "#00ff66", hp: 45, maxHp: 45, atk: 12, exp: 20, gold: 12, speed: 2.0, elem: "Earth", isBoss: false },
             { name: "Slime Merah", size: 22, color: "#ff4444", hp: 70, maxHp: 70, atk: 18, exp: 32, gold: 18, speed: 2.2, elem: "Fire", isBoss: false },
@@ -616,49 +603,65 @@
 
         function saveGame(manualAlert = false) {
             try {
-                localStorage.setItem("RPG_MRYOSIE_v9", JSON.stringify(player));
+                localStorage.setItem("RPG_MRYOSIE_v10", JSON.stringify(player));
                 if (manualAlert) log("💾 <b>PROGRESS GAME TERSIMPAN AMAN!</b>");
             } catch (e) { console.error("Save error:", e); }
         }
 
         function loadGame() {
-            const savedData = localStorage.getItem("RPG_MRYOSIE_v9");
+            const savedData = localStorage.getItem("RPG_MRYOSIE_v10");
             if (savedData) {
                 try {
                     const loaded = JSON.parse(savedData);
                     player = { ...player, ...loaded };
-                    log("📂 <b>DATA GAME DISIMPAN TERLOAD!</b>");
+                    log("📂 <b>DATA MOBILE GAME TERSIMPAN TERLOAD!</b>");
                 } catch (e) { console.error("Load error:", e); }
             }
         }
 
         function resetGameData() {
             if (confirm("Reset seluruh data game dari awal?")) {
-                localStorage.removeItem("RPG_MRYOSIE_v9");
+                localStorage.removeItem("RPG_MRYOSIE_v10");
                 location.reload();
             }
         }
 
         const keys = {};
-        window.addEventListener("keydown", e => { keys[e.key] = true; });
-        window.addEventListener("keyup", e => { keys[e.key] = false; });
+
+        // Touch Control Listeners Mobile
+        function bindTouchControl(elementId, key) {
+            const el = document.getElementById(elementId);
+            const startHandler = (e) => { e.preventDefault(); keys[key] = true; };
+            const endHandler = (e) => { e.preventDefault(); keys[key] = false; };
+
+            el.addEventListener("touchstart", startHandler, { passive: false });
+            el.addEventListener("touchend", endHandler, { passive: false });
+            el.addEventListener("mousedown", startHandler);
+            el.addEventListener("mouseup", endHandler);
+        }
 
         window.onload = function() {
             loadGame();
-            log("Selamat datang di **Masterpiece v9.0**! Dibuat oleh <b style='color:#00ff66;'>dev Mr. yosie</b>.");
+            log("Selamat datang di **2D RPG Mobile v10.0**! Dibuat oleh <b style='color:#00ff66;'>dev Mr. yosie</b>.");
             spawnInitialEnemies();
             updateUI();
+
+            bindTouchControl("btnUp", "w");
+            bindTouchControl("btnDown", "s");
+            bindTouchControl("btnLeft", "a");
+            bindTouchControl("btnRight", "d");
+
             setInterval(() => saveGame(false), 10000);
             gameLoop();
         };
 
-        // Collision Check for Movement with Obstacles
+        window.addEventListener("keydown", e => { keys[e.key] = true; });
+        window.addEventListener("keyup", e => { keys[e.key] = false; });
+
         function checkObstacleCollision(nextX, nextY) {
             for (let obs of obstacles) {
                 let dist = Math.hypot((nextX + player.size/2) - obs.x, (nextY + player.size/2) - obs.y);
-                if (dist < (player.size/2 + obs.size/2)) {
-                    return true;
-                }
+                if (dist < (player.size/2 + obs.size/2)) return true;
             }
             return false;
         }
@@ -672,13 +675,12 @@
                 player.y = nextY;
             }
 
-            // Check Teleport Portal to Dungeon
             let portalDist = Math.hypot((player.x + player.size/2) - portal.x, (player.y + player.size/2) - portal.y);
             if (portalDist < 40) {
                 if (!inDungeon) {
                     inDungeon = true;
                     player.x = 200; player.y = 200;
-                    log("🌀 **BERPINDAH KE SECRET DUNGEON AREA!** Musuh lebih kuat.");
+                    log("🌀 **BERPINDAH KE SECRET DUNGEON AREA!**");
                 } else {
                     inDungeon = false;
                     player.x = 1000; player.y = 750;
@@ -721,7 +723,7 @@
 
                     enemy.hp -= rawDmg;
                     addDamageText(enemy.x, enemy.y, `${isCrit ? '💥 ' : ''}-${rawDmg}`, isCrit ? "#ff00ff" : "#ffaa00");
-                    log(`Menebas <b style="color:${enemy.color}">${enemy.name}</b> [${enemy.elem}] sebesar <b>${rawDmg} DMG</b>!`);
+                    log(`Menebas <b style="color:${enemy.color}">${enemy.name}</b> sebesar <b>${rawDmg} DMG</b>!`);
 
                     if (enemy.hp <= 0) {
                         enemy.hp = 0;
@@ -745,13 +747,13 @@
                 }
             });
 
-            if (!hit) log("Sabetan pedang meleset! Tidak ada musuh di dekatmu.");
+            if (!hit) log("Sabetan pedang meleset! Musuh terlalu jauh.");
             updateUI();
         }
 
         function useSkill() {
             if (player.mp < 20) {
-                log("MP tidak cukup! Butuh 20 MP untuk Skill Es.");
+                log("MP tidak cukup untuk Skill Es (Butuh 20 MP).");
                 return;
             }
 
@@ -768,12 +770,10 @@
                     enemy.isAgro = true;
                     
                     let skillDmg = Math.floor(getPlayerAtk() * 1.8);
-                    
-                    // Elemental Weakness Calculation (Ice Vs Fire = 2x Damage)
                     if (enemy.elem === "Fire") {
                         skillDmg = Math.floor(skillDmg * 2.0);
-                        addDamageText(enemy.x, enemy.y, `🔥 ELEMENT CRIT! -${skillDmg}`, "#ff0000");
-                        log(`🔥 **ELEMENTAL WEAKNESS!** Damage berlipat ganda pada <b style="color:${enemy.color}">${enemy.name}</b>!`);
+                        addDamageText(enemy.x, enemy.y, `🔥 CRIT! -${skillDmg}`, "#ff0000");
+                        log(`🔥 **WEAKNESS!** Damage berlipat ganda pada <b style="color:${enemy.color}">${enemy.name}</b>!`);
                     } else {
                         addDamageText(enemy.x, enemy.y, `-${skillDmg} ❄️`, "#00bbf9");
                     }
@@ -784,7 +784,7 @@
                         enemy.hp = 0;
                         enemy.alive = false;
                         enemy.isAgro = false;
-                        log(`💥 <b style="color:${enemy.color}">${enemy.name}</b> hancur! +${enemy.gold} Gold & +${enemy.exp} EXP.`);
+                        log(`💥 <b style="color:${enemy.color}">${enemy.name}</b> tewas! +${enemy.gold} Gold & +${enemy.exp} EXP.`);
                         player.gold += enemy.gold;
                         player.exp += enemy.exp;
                         checkQuestProgress(enemy.name);
@@ -804,11 +804,9 @@
             updateUI();
         }
 
-        // Pet AI Helper Logic
         function updatePetAI() {
             if (!player.hasPet) return;
 
-            // Pet follows player smoothly
             let dx = (player.x - 20) - pet.x;
             let dy = (player.y - 20) - pet.y;
             let dist = Math.hypot(dx, dy);
@@ -818,9 +816,8 @@
                 pet.y += (dy / dist) * (player.speed * 0.9);
             }
 
-            // Pet attacks nearest enemy automatically
             const now = Date.now();
-            if (now - pet.lastAttackTime > 2500) { // Setiap 2.5 detik
+            if (now - pet.lastAttackTime > 2500) {
                 enemies.forEach(enemy => {
                     if (!enemy.alive) return;
                     let pDist = Math.hypot((pet.x) - (enemy.x + enemy.size/2), (pet.y) - (enemy.y + enemy.size/2));
@@ -926,7 +923,6 @@
             if (keys["ArrowDown"] || keys["s"] || keys["S"]) movePlayer(0, player.speed);
             if (keys["ArrowLeft"] || keys["a"] || keys["A"]) movePlayer(-player.speed, 0);
             if (keys["ArrowRight"] || keys["d"] || keys["D"]) movePlayer(player.speed, 0);
-            if (keys[" "]) { attackNearestEnemy(); keys[" "] = false; }
         }
 
         function updateUI() {
@@ -934,8 +930,8 @@
             document.getElementById("txtHp").innerText = `${player.hp}/${player.maxHp}`;
             document.getElementById("txtMp").innerText = `${player.mp}/${player.maxMp}`;
             document.getElementById("txtGold").innerText = player.gold;
-            document.getElementById("txtAtk").innerText = `${getPlayerAtk()} (${player.baseAtk}+${player.bonusAtk})`;
-            document.getElementById("txtDef").innerText = `${getPlayerDef()} (${player.baseDef}+${player.bonusDef})`;
+            document.getElementById("txtAtk").innerText = `${getPlayerAtk()}`;
+            document.getElementById("txtDef").innerText = `${getPlayerDef()}`;
             document.getElementById("txtPotCount").innerText = player.potions;
             document.getElementById("txtManaPotCount").innerText = player.manaPotions;
             document.getElementById("txtPoints").innerText = player.statPoints;
@@ -1039,7 +1035,7 @@
             ctx.lineWidth = 4;
             ctx.strokeRect(0, 0, MAP_WIDTH, MAP_HEIGHT);
 
-            // Draw Teleport Portal
+            // Portal
             ctx.fillStyle = portal.color;
             ctx.beginPath();
             ctx.arc(portal.x, portal.y, portal.size/2, 0, Math.PI * 2);
@@ -1048,7 +1044,7 @@
             ctx.font = "bold 10px sans-serif";
             ctx.fillText("PORTAL DUNGEON", portal.x - 45, portal.y - 25);
 
-            // Draw Obstacles (Trees & Rocks)
+            // Obstacles
             obstacles.forEach(obs => {
                 ctx.fillStyle = obs.color;
                 ctx.beginPath();
@@ -1087,10 +1083,10 @@
 
                 ctx.fillStyle = enemy.isAgro ? "#ff4444" : "#ffffff";
                 ctx.font = "bold 10px sans-serif";
-                ctx.fillText(`${enemy.name} [${enemy.elem}]${enemy.isAgro ? ' 💢' : ''}`, enemy.x - 10, enemy.y - 14);
+                ctx.fillText(`${enemy.name} [${enemy.elem}]`, enemy.x - 10, enemy.y - 14);
             });
 
-            // Draw Companion Pet (Baby Dragon)
+            // Companion Pet
             if (player.hasPet) {
                 ctx.fillStyle = pet.color;
                 ctx.beginPath();
@@ -1101,7 +1097,7 @@
                 ctx.fillText("Baby Dragon", pet.x - 20, pet.y - 10);
             }
 
-            // Draw Player
+            // Player
             ctx.fillStyle = player.color;
             ctx.fillRect(player.x, player.y, player.size, player.size);
             ctx.strokeStyle = "#ffffff";
@@ -1132,9 +1128,9 @@
             ctx.restore();
 
             // Mini-Map
-            const mmSize = 100;
-            const mmX = canvas.width - mmSize - 10;
-            const mmY = 10;
+            const mmSize = 80;
+            const mmX = canvas.width - mmSize - 8;
+            const mmY = 8;
             ctx.fillStyle = "rgba(11, 12, 16, 0.85)";
             ctx.fillRect(mmX, mmY, mmSize, mmSize);
             ctx.strokeStyle = "#45a29e";
@@ -1152,8 +1148,8 @@
 
             // Watermark
             ctx.fillStyle = "rgba(255, 255, 255, 0.35)";
-            ctx.font = "12px Courier New";
-            ctx.fillText("dev Mr. yosie", canvas.width - 110, canvas.height - 10);
+            ctx.font = "10px monospace";
+            ctx.fillText("dev Mr. yosie", canvas.width - 90, canvas.height - 8);
         }
 
         function gameLoop() {
