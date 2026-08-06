@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>2D RPG World - MP Scaling v30</title>
+    <title>2D RPG World - Reset Button v31</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; -webkit-user-select: none; touch-action: manipulation; }
         body { background-color: #0b0c10; color: #c5c6c7; font-family: -apple-system, BlinkMacSystemFont, sans-serif; display: flex; flex-direction: column; align-items: center; min-height: 100vh; padding: 5px; }
@@ -70,7 +70,7 @@
 
     <div class="game-wrapper" id="gameWrapper">
         <div class="game-header">
-            <span class="game-title">🎮 RPG World (NEW UPDATE v30)</span>
+            <span class="game-title">🎮 RPG World (Reset Button v31)</span>
             <span class="watermark">dev Mr. yosie</span>
         </div>
 
@@ -137,6 +137,9 @@
                 </div>
                 <div class="setting-row">
                     <button class="setting-btn-toggle" style="background:#00ff66; width:100%" onclick="saveGame()">💾 SIMPAN PROGRESS GAME</button>
+                </div>
+                <div class="setting-row">
+                    <button class="setting-btn-toggle" style="background:#ff4444; color:#fff; width:100%" onclick="resetGame()">🔄 RESET / RESTART GAME</button>
                 </div>
             </div>
         </div>
@@ -251,7 +254,6 @@
             hp: 100, maxHp: 100, mp: 40, maxMp: 40, baseAtk: 12, baseDef: 0, 
             gold: 1500, exp: 0, maxExp: 60, lastCombatTime: 0,
             
-            // Equipment Buff Stats
             critChance: 0.05,  
             lifesteal: 0.0,    
             goldMultiplier: 1.0,
@@ -495,7 +497,7 @@
             while(player.exp >= player.maxExp) {
                 player.level++; player.exp -= player.maxExp; player.maxExp = Math.floor(player.maxExp * 1.5);
                 player.maxHp += 20; player.hp = player.maxHp; 
-                player.maxMp += 10; player.mp = player.maxMp; // FIXED: Max MP & MP Refill on level up
+                player.maxMp += 10; player.mp = player.maxMp; 
                 player.baseAtk += 4;
                 log(`🌟 **LEVEL UP ${player.level}!** (+20 Max HP, +10 Max MP)`);
             }
@@ -766,10 +768,16 @@
             updateUI(); updateEncInfo();
         }
 
-        // SETTINGS & SAVE
+        // SETTINGS, SAVE & RESET
         function openSettingsModal() { document.getElementById("settingsModal").style.display="flex"; }
         function closeSettingsModal() { document.getElementById("settingsModal").style.display="none"; }
         function saveGame() { localStorage.setItem("RPG_V30", JSON.stringify(player)); log("💾 Progress tersimpan!"); closeSettingsModal(); }
+        function resetGame() {
+            if (confirm("⚠️ Apakah Anda yakin ingin mereset seluruh progress game dari awal?")) {
+                localStorage.removeItem("RPG_V30");
+                location.reload();
+            }
+        }
 
         // RENDER SYSTEM
         function drawMap() {
