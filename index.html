@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>2D RPG World - Massive Loot Variety v27</title>
+    <title>2D RPG World - MP Scaling v30</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; -webkit-user-select: none; touch-action: manipulation; }
         body { background-color: #0b0c10; color: #c5c6c7; font-family: -apple-system, BlinkMacSystemFont, sans-serif; display: flex; flex-direction: column; align-items: center; min-height: 100vh; padding: 5px; }
@@ -70,7 +70,7 @@
 
     <div class="game-wrapper" id="gameWrapper">
         <div class="game-header">
-            <span class="game-title">🎮 RPG World (Massive Loot v27)</span>
+            <span class="game-title">🎮 RPG World (NEW UPDATE v30)</span>
             <span class="watermark">dev Mr. yosie</span>
         </div>
 
@@ -245,12 +245,19 @@
             lb.scrollTop = lb.scrollHeight;
         }
 
-        // PLAYER & PET STATE
+        // PLAYER & BUFF STATE
         let player = {
             x: 2000, y: 1500, size: 24, speed: 5, color: "#66fcf1", level: 1, 
             hp: 100, maxHp: 100, mp: 40, maxMp: 40, baseAtk: 12, baseDef: 0, 
             gold: 1500, exp: 0, maxExp: 60, lastCombatTime: 0,
             
+            // Equipment Buff Stats
+            critChance: 0.05,  
+            lifesteal: 0.0,    
+            goldMultiplier: 1.0,
+            expMultiplier: 1.0,
+            hpRegen: 0,
+
             weapon: "Tangan Kosong", weaponEnchantLvl: 0, weaponTier: "⚪ Biasa", weaponMult: 1.0, weaponBaseAtk: 0,
             armor: "Pakaian Biasa", armorEnchantLvl: 0, armorTier: "⚪ Biasa", armorMult: 1.0, armorBaseDef: 0,
             acc: "Cincin Kayu", accEnchantLvl: 0, accTier: "⚪ Biasa", accMult: 1.0, accBaseAtk: 2,
@@ -300,7 +307,7 @@
             else b.innerText = `${questsList[currentQuestIndex].desc} (${questsList[currentQuestIndex].count}/${questsList[currentQuestIndex].targetCount})`;
         }
 
-        // --- VARIASI ITEM DROP DIPERBANYAK & DIKAYA KELASNYA ---
+        // ITEMS & DROPS
         let inventory = [
             { id: 1, name: "HP Potion Kecil", category: "potion", type: "potion_hp", val: 35, qty: 5 },
             { id: 2, name: "⚪ [Common] Kucing Desa", category: "pet", color: "#cccccc", atkBonus: 2, defBonus: 0, tier: "⚪ Common", qty: 1 }
@@ -310,8 +317,6 @@
             { id:2, name: "HP Potion Besar (+120 HP)", cost: 85, type: "potion_hp", val: 120 },
             { id:3, name: "MP Potion Sedang (+50 MP)", cost: 40, type: "potion_mp", val: 50 }
         ];
-
-        // Tabel Drop Diperluas Menjadi Puluhan Jenis Item Berbeda
         const normalDrops = {
             common: [
                 { name: "⚪ [Common] Pedang Kayu", cat: "weapon", val: 8 }, 
@@ -338,7 +343,6 @@
                 { name: "🟡 [Legendary] Mahkota Cahaya", cat: "acc", val: 35 }
             ]
         };
-
         const bossDrops = [
             { name: "🗡️ [SSR] Excalibur Legendaris", cat: "weapon", val: 140 },
             { name: "🛡️ [SSR] Armor Dewa Valhalla", cat: "armor", val: 95 },
@@ -346,7 +350,6 @@
             { name: "⚔️ [SSR] Dual Blade Kosmik", cat: "weapon", val: 165 },
             { name: "🛡️ [SSR] Perisai Aegis Langit", cat: "armor", val: 110 }
         ];
-
         const petGachaPool = [
             { name: "🔴 [Mythic] Naga Void", tier: "🔴 Mythic", color: "#a8ded5", atkBonus: 150, defBonus: 60, chance: 0.01 },
             { name: "🟡 [Legendary] Phoenix", tier: "🟡 Legendary", color: "#ffaa00", atkBonus: 75, defBonus: 25, chance: 0.05 },
@@ -354,7 +357,6 @@
             { name: "🔵 [Rare] Serigala", tier: "🔵 Rare", color: "#45a29e", atkBonus: 15, defBonus: 5, chance: 0.30 },
             { name: "⚪ [Common] Anjing", tier: "⚪ Common", color: "#b5838d", atkBonus: 4, defBonus: 1, chance: 0.50 }
         ];
-
         const rarityTiers = [
             { name: "🔴 MYTHIC", multiplier: 2.5, chance: 0.01 }, { name: "🟡 LEGENDARY", multiplier: 1.8, chance: 0.05 },
             { name: "🟣 EPIC", multiplier: 1.45, chance: 0.14 }, { name: "🔵 RARE", multiplier: 1.20, chance: 0.30 },
@@ -436,7 +438,14 @@
         }
 
         let exploredDungeons = new Set();
+        let exploredQuestIndex = -1;
+        
         function movePlayer() {
+            if (exploredQuestIndex !== currentQuestIndex) {
+                exploredDungeons.clear();
+                exploredQuestIndex = currentQuestIndex;
+            }
+
             let dx = 0, dy = 0;
             if (controlScheme === "WASD") {
                 if(keysPressed["KeyW"]||keysPressed["ArrowUp"]) dy -= 1; if(keysPressed["KeyS"]||keysPressed["ArrowDown"]) dy += 1;
@@ -456,6 +465,7 @@
             dungeons.forEach((d, idx) => { 
                 if (Math.hypot(player.x-d.x, player.y-d.y) < 40 && !exploredDungeons.has(idx)) {
                     exploredDungeons.add(idx);
+                    log(`🏰 Menjelajahi ${d.name}!`);
                     checkQuest("explore");
                 }
             });
@@ -463,18 +473,35 @@
         }
 
         function enterCombat() { player.lastCombatTime = Date.now(); document.getElementById("gameWrapper").classList.add("in-combat"); document.getElementById("combatBanner").style.display="block"; }
-        setInterval(() => { if(Date.now()-player.lastCombatTime > 5000) { document.getElementById("gameWrapper").classList.remove("in-combat"); document.getElementById("combatBanner").style.display="none"; if(player.hp<player.maxHp) { player.hp=Math.min(player.maxHp, player.hp+2); addDmgText(player.x,player.y,"+2 HP","#00ff66"); updateUI(); } } }, 5000);
+        
+        setInterval(() => { 
+            if(player.hpRegen > 0 && player.hp < player.maxHp) {
+                player.hp = Math.min(player.maxHp, player.hp + player.hpRegen);
+                addDmgText(player.x, player.y, `+${player.hpRegen} 💚 (Regen)`, "#00ff66");
+                updateUI();
+            }
+            if(Date.now()-player.lastCombatTime > 5000) { 
+                document.getElementById("gameWrapper").classList.remove("in-combat"); 
+                document.getElementById("combatBanner").style.display="none"; 
+                if(player.hp<player.maxHp) { 
+                    player.hp=Math.min(player.maxHp, player.hp+2); 
+                    addDmgText(player.x,player.y,"+2 HP","#00ff66"); 
+                    updateUI(); 
+                } 
+            } 
+        }, 5000);
 
         function checkLevelUp() {
             while(player.exp >= player.maxExp) {
                 player.level++; player.exp -= player.maxExp; player.maxExp = Math.floor(player.maxExp * 1.5);
-                player.maxHp += 20; player.hp = player.maxHp; player.baseAtk += 4;
-                log(`🌟 **LEVEL UP ${player.level}!**`);
+                player.maxHp += 20; player.hp = player.maxHp; 
+                player.maxMp += 10; player.mp = player.maxMp; // FIXED: Max MP & MP Refill on level up
+                player.baseAtk += 4;
+                log(`🌟 **LEVEL UP ${player.level}!** (+20 Max HP, +10 Max MP)`);
             }
             updateUI();
         }
 
-        // Logika Drop Diperkaya dengan Berbagai Tier
         function dropLogic(enemy) {
             let r = Math.random();
             if(enemy.isBoss) {
@@ -510,11 +537,28 @@
             enemies.forEach(e => {
                 if(e.alive && Math.hypot((player.x+12)-(e.x+12), (player.y+12)-(e.y+12)) < 60) {
                     hit = true; e.agro = true; enterCombat(); playSound('attack');
-                    let dmg = Math.floor(getEquipTotalAtk() * (0.8 + Math.random()*0.4));
+                    
+                    let baseDmg = getEquipTotalAtk() * (0.8 + Math.random()*0.4);
+                    let isCrit = Math.random() < player.critChance;
+                    let dmg = isCrit ? Math.floor(baseDmg * 2) : Math.floor(baseDmg);
+                    
+                    if(isCrit) {
+                        addDmgText(e.x, e.y - 10, "CRIT! 💥", "#ff0055");
+                    }
+                    
+                    if(player.lifesteal > 0) {
+                        let healAmount = Math.floor(dmg * player.lifesteal);
+                        player.hp = Math.min(player.maxHp, player.hp + healAmount);
+                        if(healAmount > 0) addDmgText(player.x, player.y, `+${healAmount} 💖`, "#00ff66");
+                    }
+
                     e.hp -= dmg; addDmgText(e.x, e.y, `-${dmg}`, "#ffaa00"); addParticles(e.x, e.y, "#ffaa00");
                     if(e.hp <= 0) {
-                        e.alive = false; player.gold += e.gold; player.exp += e.exp;
-                        log(`💥 ${e.name} tewas! +${e.gold} Gold`);
+                        e.alive = false; 
+                        let earnedGold = Math.floor(e.gold * player.goldMultiplier);
+                        let earnedExp = Math.floor(e.exp * player.expMultiplier);
+                        player.gold += earnedGold; player.exp += earnedExp;
+                        log(`💥 ${e.name} tewas! +${earnedGold} Gold, +${earnedExp} EXP`);
                         checkQuest(e.name); dropLogic(e); checkLevelUp(); updateUI();
                     }
                 }
@@ -529,7 +573,13 @@
                 if(e.alive && Math.hypot((player.x+12)-(e.x+12), (player.y+12)-(e.y+12)) < 100) {
                     let dmg = Math.floor(getEquipTotalAtk() * 2.0); e.hp -= dmg; e.agro = true;
                     addDmgText(e.x, e.y, `-${dmg} ❄️`, "#00bbf9");
-                    if(e.hp <= 0) { e.alive = false; player.gold += e.gold; player.exp += e.exp; checkQuest(e.name); dropLogic(e); checkLevelUp(); }
+                    if(e.hp <= 0) { 
+                        e.alive = false; 
+                        let earnedGold = Math.floor(e.gold * player.goldMultiplier);
+                        let earnedExp = Math.floor(e.exp * player.expMultiplier);
+                        player.gold += earnedGold; player.exp += earnedExp; 
+                        checkQuest(e.name); dropLogic(e); checkLevelUp(); 
+                    }
                 }
             });
             updateUI();
@@ -566,7 +616,7 @@
             document.getElementById("invEquipAcc").innerText = `${player.acc} (+${player.accEnchantLvl})`;
         }
 
-        // INVENTORY & PENINGKATAN STATUS
+        // INVENTORY & BUFF ASSIGNMENT SAAT EQUIP ITEM
         let currentInvFilter = 'all';
         function openInventoryModal() { document.getElementById("inventoryModal").style.display="flex"; renderInventory(); }
         function closeInventoryModal() { document.getElementById("inventoryModal").style.display="none"; }
@@ -597,7 +647,7 @@
             const list = document.getElementById("inventoryList"); list.innerHTML = "";
             let arr = currentInvFilter==='all' ? inventory : inventory.filter(i=>i.category===currentInvFilter);
             arr.forEach(i => {
-                let idx = inventory.indexOf(i), btnTx = i.category==='pet' ? 'Pakai' : (i.category==='potion' ? 'Minum' : 'Equip & Tingkatkan Status');
+                let idx = inventory.indexOf(i), btnTx = i.category==='pet' ? 'Pakai' : (i.category==='potion' ? 'Minum' : 'Equip & Buff');
                 let price = getSellPrice(i);
                 
                 list.innerHTML += `<div class="list-item-card" style="flex-direction:column; align-items:flex-start; gap:6px;">
@@ -619,11 +669,40 @@
                 i.qty--; if(i.qty<=0) inventory.splice(idx,1); log(`Meminum ${i.name}`); 
             }
             else if(i.category==='pet') { 
-                player.activePetName = i.name.split('] ')[1]; player.activePetColor = i.color; player.activePetAtkBonus = i.atkBonus; player.activePetDefBonus = i.defBonus; player.activePetTier = i.tier; log(`Memakai Pet ${player.activePetName}`); 
+                player.activePetName = i.name.split('] ')[1]; 
+                player.activePetColor = i.color; 
+                player.activePetAtkBonus = i.atkBonus; 
+                player.activePetDefBonus = i.defBonus; 
+                player.activePetTier = i.tier;
+                
+                if(i.tier.includes("Mythic")) {
+                    player.goldMultiplier = 2.5; player.expMultiplier = 2.5; player.hpRegen = 8;
+                } else if(i.tier.includes("Legendary")) {
+                    player.goldMultiplier = 1.8; player.expMultiplier = 1.8; player.hpRegen = 4;
+                } else if(i.tier.includes("Epic")) {
+                    player.goldMultiplier = 1.3; player.expMultiplier = 1.4; player.hpRegen = 0;
+                } else if(i.tier.includes("Rare")) {
+                    player.goldMultiplier = 1.1; player.expMultiplier = 1.2; player.hpRegen = 0;
+                } else {
+                    player.goldMultiplier = 1.0; player.expMultiplier = 1.0; player.hpRegen = 0;
+                }
+                log(`🐾 Pet ${player.activePetName} aktif! Buff Pet diterapkan.`); 
             }
             else if(i.category==='weapon') { 
                 player.weapon = i.name; player.weaponBaseAtk = i.val; player.weaponEnchantLvl=0; player.weaponMult=1; 
-                log(`⚔️ Senjata ${i.name} dipasang! Status ATK meningkat.`); 
+                
+                if(i.name.includes("SSR") || i.name.includes("Excalibur") || i.name.includes("Kosmik")) {
+                    player.critChance = 0.35; player.lifesteal = 0.25;
+                } else if(i.name.includes("Legendary") || i.name.includes("Purba")) {
+                    player.critChance = 0.25; player.lifesteal = 0.15;
+                } else if(i.name.includes("Epic") || i.name.includes("Suci")) {
+                    player.critChance = 0.18; player.lifesteal = 0.08;
+                } else if(i.name.includes("Rare") || i.name.includes("Besi")) {
+                    player.critChance = 0.12; player.lifesteal = 0.0;
+                } else {
+                    player.critChance = 0.05; player.lifesteal = 0.0;
+                }
+                log(`⚔️ Senjata ${i.name} dipasang! Crit: ${player.critChance*100}%, Lifesteal: ${player.lifesteal*100}%`); 
             }
             else if(i.category==='armor') { 
                 player.armor = i.name; player.armorBaseDef = i.val; player.armorEnchantLvl=0; player.armorMult=1; 
@@ -690,7 +769,7 @@
         // SETTINGS & SAVE
         function openSettingsModal() { document.getElementById("settingsModal").style.display="flex"; }
         function closeSettingsModal() { document.getElementById("settingsModal").style.display="none"; }
-        function saveGame() { localStorage.setItem("RPG_V27", JSON.stringify(player)); log("💾 Progress tersimpan!"); closeSettingsModal(); }
+        function saveGame() { localStorage.setItem("RPG_V30", JSON.stringify(player)); log("💾 Progress tersimpan!"); closeSettingsModal(); }
 
         // RENDER SYSTEM
         function drawMap() {
