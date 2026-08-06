@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>2D RPG World - Reset Button v31</title>
+    <title>2D RPG World - Visible Gear & Pets v35</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; -webkit-user-select: none; touch-action: manipulation; }
         body { background-color: #0b0c10; color: #c5c6c7; font-family: -apple-system, BlinkMacSystemFont, sans-serif; display: flex; flex-direction: column; align-items: center; min-height: 100vh; padding: 5px; }
@@ -70,7 +70,7 @@
 
     <div class="game-wrapper" id="gameWrapper">
         <div class="game-header">
-            <span class="game-title">🎮 RPG World (Reset Button v31)</span>
+            <span class="game-title">🎮 RPG JANCOK:> (NEW UPDATE  v35)</span>
             <span class="watermark">dev Mr. yosie</span>
         </div>
 
@@ -134,6 +134,14 @@
                         <div style="font-size:10px; color:#888;">Pilih Analog Virtual Joystick atau WASD Keyboard</div>
                     </div>
                     <button class="setting-btn-toggle" id="btnControlType" onclick="toggleControlScheme()">ANALOG</button>
+                </div>
+                <!-- FITUR BARU: UBAH NAMA PEMAIN -->
+                <div class="setting-row" style="flex-direction: column; align-items: flex-start; gap: 6px;">
+                    <div style="font-weight:bold; color:#66fcf1;">Ubah Nama Pemain</div>
+                    <div style="display: flex; gap: 6px; width: 100%;">
+                        <input type="text" id="playerNameInput" placeholder="Masukkan nama baru..." style="flex: 1; background: #111827; border: 1px solid #45a29e; color: #fff; padding: 6px; border-radius: 6px; font-size: 11px;">
+                        <button class="setting-btn-toggle" onclick="changePlayerName()" style="background: #ffaa00; color: #000;">UBAH</button>
+                    </div>
                 </div>
                 <div class="setting-row">
                     <button class="setting-btn-toggle" style="background:#00ff66; width:100%" onclick="saveGame()">💾 SIMPAN PROGRESS GAME</button>
@@ -250,6 +258,7 @@
 
         // PLAYER & BUFF STATE
         let player = {
+            name: "HERO",
             x: 2000, y: 1500, size: 24, speed: 5, color: "#66fcf1", level: 1, 
             hp: 100, maxHp: 100, mp: 40, maxMp: 40, baseAtk: 12, baseDef: 0, 
             gold: 1500, exp: 0, maxExp: 60, lastCombatTime: 0,
@@ -276,6 +285,19 @@
         function getEquipTotalDef() {
             let armDef = Math.floor(player.armorBaseDef * player.armorMult * (1 + player.armorEnchantLvl * 0.10));
             return player.baseDef + armDef + player.activePetDefBonus;
+        }
+
+        // FUNGSI BARU UNTUK MENGUBAH NAMA PEMAIN
+        function changePlayerName() {
+            let input = document.getElementById("playerNameInput");
+            let newName = input.value.trim();
+            if (newName.length > 0) {
+                player.name = newName;
+                log(`✏️ Nama pemain diubah menjadi: ${newName}`);
+                alert(`Nama berhasil diubah menjadi: ${newName}`);
+            } else {
+                log("⚠️ Nama tidak boleh kosong!");
+            }
         }
 
         // QUEST SYSTEM
@@ -618,7 +640,6 @@
             document.getElementById("invEquipAcc").innerText = `${player.acc} (+${player.accEnchantLvl})`;
         }
 
-        // INVENTORY & BUFF ASSIGNMENT SAAT EQUIP ITEM
         let currentInvFilter = 'all';
         function openInventoryModal() { document.getElementById("inventoryModal").style.display="flex"; renderInventory(); }
         function closeInventoryModal() { document.getElementById("inventoryModal").style.display="none"; }
@@ -771,10 +792,10 @@
         // SETTINGS, SAVE & RESET
         function openSettingsModal() { document.getElementById("settingsModal").style.display="flex"; }
         function closeSettingsModal() { document.getElementById("settingsModal").style.display="none"; }
-        function saveGame() { localStorage.setItem("RPG_V30", JSON.stringify(player)); log("💾 Progress tersimpan!"); closeSettingsModal(); }
+        function saveGame() { localStorage.setItem("RPG_V35", JSON.stringify(player)); log("💾 Progress tersimpan!"); closeSettingsModal(); }
         function resetGame() {
             if (confirm("⚠️ Apakah Anda yakin ingin mereset seluruh progress game dari awal?")) {
-                localStorage.removeItem("RPG_V30");
+                localStorage.removeItem("RPG_V35");
                 location.reload();
             }
         }
@@ -805,12 +826,147 @@
                 ctx.fillText(d.name, d.x, d.y - 32);
             });
             
+            // --- DETAILED & CLEAR MONSTER SPRITES ---
             enemies.forEach(e => { 
                 if(e.alive) { 
-                    ctx.fillStyle = e.color; 
-                    ctx.beginPath(); ctx.arc(e.x+12, e.y+12, e.isBoss ? 20 : 12, 0, Math.PI*2); ctx.fill(); 
+                    let ex = e.x + 12;
+                    let ey = e.y + 12;
+                    ctx.save();
+
+                    if (e.name.includes("Slime Hijau")) {
+                        ctx.fillStyle = "#00ff66";
+                        ctx.beginPath();
+                        ctx.arc(ex, ey + 2, 12, Math.PI, 0, false);
+                        ctx.quadraticCurveTo(ex + 12, ey + 14, ex, ey + 14);
+                        ctx.quadraticCurveTo(ex - 12, ey + 14, ex - 12, ey + 2);
+                        ctx.fill();
+                        ctx.fillStyle = "rgba(255,255,255,0.6)";
+                        ctx.beginPath();
+                        ctx.ellipse(ex - 4, ey, 3, 2, Math.PI / 4, 0, Math.PI * 2);
+                        ctx.fill();
+                        ctx.fillStyle = "#000";
+                        ctx.fillRect(ex - 4, ey + 2, 2, 3);
+                        ctx.fillRect(ex + 2, ey + 2, 2, 3);
+                    } 
+                    else if (e.name.includes("Goblin Liar")) {
+                        ctx.fillStyle = "#2d6a4f";
+                        ctx.beginPath();
+                        ctx.arc(ex, ey + 2, 10, 0, Math.PI * 2);
+                        ctx.fill();
+                        ctx.beginPath();
+                        ctx.moveTo(ex - 8, ey);
+                        ctx.lineTo(ex - 16, ey - 6);
+                        ctx.lineTo(ex - 8, ey + 4);
+                        ctx.moveTo(ex + 8, ey);
+                        ctx.lineTo(ex + 16, ey - 6);
+                        ctx.lineTo(ex + 8, ey + 4);
+                        ctx.fill();
+                        ctx.fillStyle = "#ff0000";
+                        ctx.fillRect(ex - 4, ey, 2, 2);
+                        ctx.fillRect(ex + 2, ey, 2, 2);
+                        ctx.fillStyle = "#8b4513";
+                        ctx.fillRect(ex + 10, ey - 4, 3, 10);
+                    } 
+                    else if (e.name.includes("Raja Slime")) {
+                        ctx.fillStyle = "#00ff66";
+                        ctx.beginPath();
+                        ctx.arc(ex, ey + 4, 20, Math.PI, 0, false);
+                        ctx.quadraticCurveTo(ex + 20, ey + 22, ex, ey + 22);
+                        ctx.quadraticCurveTo(ex - 20, ey + 22, ex - 20, ey + 4);
+                        ctx.fill();
+                        ctx.fillStyle = "rgba(255,255,255,0.5)";
+                        ctx.beginPath();
+                        ctx.ellipse(ex - 6, ey + 2, 5, 3, Math.PI / 4, 0, Math.PI * 2);
+                        ctx.fill();
+                        ctx.fillStyle = "#ffaa00";
+                        ctx.beginPath();
+                        ctx.moveTo(ex - 8, ey - 16);
+                        ctx.lineTo(ex - 12, ey - 26);
+                        ctx.lineTo(ex - 4, ey - 20);
+                        ctx.lineTo(ex, ey - 28);
+                        ctx.lineTo(ex + 4, ey - 20);
+                        ctx.lineTo(ex + 12, ey - 26);
+                        ctx.lineTo(ex + 8, ey - 16);
+                        ctx.closePath();
+                        ctx.fill();
+                        ctx.fillStyle = "#fff";
+                        ctx.fillRect(ex - 7, ey + 6, 4, 5);
+                        ctx.fillRect(ex + 3, ey + 6, 4, 5);
+                        ctx.fillStyle = "#000";
+                        ctx.fillRect(ex - 6, ey + 7, 2, 3);
+                        ctx.fillRect(ex + 4, ey + 7, 2, 3);
+                    } 
+                    else if (e.name.includes("Naga Api")) {
+                        ctx.fillStyle = "#b7094c";
+                        ctx.beginPath();
+                        ctx.moveTo(ex, ey);
+                        ctx.lineTo(ex - 24, ey - 12);
+                        ctx.lineTo(ex - 16, ey + 12);
+                        ctx.moveTo(ex, ey);
+                        ctx.lineTo(ex + 24, ey - 12);
+                        ctx.lineTo(ex + 16, ey + 12);
+                        ctx.fill();
+                        ctx.fillStyle = "#d00000";
+                        ctx.beginPath();
+                        ctx.arc(ex, ey, 14, 0, Math.PI * 2);
+                        ctx.fill();
+                        ctx.fillStyle = "#ffaa00";
+                        ctx.beginPath();
+                        ctx.moveTo(ex - 6, ey - 10);
+                        ctx.lineTo(ex - 14, ey - 22);
+                        ctx.lineTo(ex - 2, ey - 14);
+                        ctx.moveTo(ex + 6, ey - 10);
+                        ctx.lineTo(ex + 14, ey - 22);
+                        ctx.lineTo(ex + 2, ey - 14);
+                        ctx.fill();
+                        ctx.fillStyle = "#ffff00";
+                        ctx.fillRect(ex - 5, ey - 3, 3, 3);
+                        ctx.fillRect(ex + 2, ey - 3, 3, 3);
+                    } 
+                    else if (e.name.includes("Yeti Raksasa")) {
+                        ctx.fillStyle = "#caf0f8";
+                        ctx.beginPath();
+                        ctx.roundRect(ex - 18, ey - 16, 36, 32, 10);
+                        ctx.fill();
+                        ctx.fillStyle = "#90e0ef";
+                        ctx.fillRect(ex - 14, ey - 10, 6, 6);
+                        ctx.fillRect(ex + 8, ey - 10, 6, 6);
+                        ctx.fillStyle = "#0077b6";
+                        ctx.fillRect(ex - 8, ey - 4, 4, 4);
+                        ctx.fillRect(ex + 4, ey - 4, 4, 4);
+                        ctx.fillStyle = "#fff";
+                        ctx.fillRect(ex - 4, ey + 6, 2, 4);
+                        ctx.fillRect(ex + 2, ey + 6, 2, 4);
+                    } 
+                    else if (e.name.includes("Raja Iblis")) {
+                        ctx.fillStyle = "#3c096c";
+                        ctx.beginPath();
+                        ctx.moveTo(ex, ey - 18);
+                        ctx.lineTo(ex - 18, ey + 14);
+                        ctx.lineTo(ex + 18, ey + 14);
+                        ctx.closePath();
+                        ctx.fill();
+                        ctx.fillStyle = "#ff0055";
+                        ctx.beginPath();
+                        ctx.moveTo(ex - 8, ey - 10);
+                        ctx.quadraticCurveTo(ex - 22, ey - 28, ex - 14, ey - 32);
+                        ctx.quadraticCurveTo(ex - 10, ey - 20, ex - 4, ey - 14);
+                        ctx.moveTo(ex + 8, ey - 10);
+                        ctx.quadraticCurveTo(ex + 22, ey - 28, ex + 14, ey - 32);
+                        ctx.quadraticCurveTo(ex + 10, ey - 20, ex + 4, ey - 14);
+                        ctx.fill();
+                        ctx.fillStyle = "#ffea00";
+                        ctx.fillRect(ex - 5, ey - 4, 3, 2);
+                        ctx.fillRect(ex + 2, ey - 4, 3, 2);
+                    } 
+                    else {
+                        ctx.fillStyle = e.color;
+                        ctx.beginPath(); ctx.arc(ex, ey, e.isBoss ? 20 : 12, 0, Math.PI*2); ctx.fill();
+                    }
+
+                    ctx.restore();
                     ctx.fillStyle = "#fff"; ctx.font = "bold 10px sans-serif"; ctx.textAlign = "center";
-                    ctx.fillText(e.name, e.x + 12, e.y - 10); 
+                    ctx.fillText(e.name, ex, e.y - 6); 
                 } 
             });
             
@@ -822,13 +978,97 @@
             });
             damageTexts.forEach((dt, i) => { ctx.fillStyle=dt.col; ctx.font="bold 12px sans-serif"; ctx.fillText(dt.txt, dt.x, dt.y-(30-dt.life)); dt.life--; if(dt.life<=0) damageTexts.splice(i,1); });
 
-            if(player.activePetTier.includes("Mythic")) { ctx.strokeStyle="#ff0055"; ctx.beginPath(); ctx.arc(petEntity.x+7, petEntity.y+7, 10, 0, Math.PI*2); ctx.stroke(); }
-            ctx.fillStyle = player.activePetColor; ctx.beginPath(); ctx.arc(petEntity.x+7, petEntity.y+7, 7, 0, Math.PI*2); ctx.fill();
-            ctx.fillStyle = "#fff"; ctx.font = "bold 9px sans-serif"; ctx.textAlign = "center"; ctx.fillText(player.activePetName, petEntity.x + 7, petEntity.y - 5);
+            // --- VISUAL PET NYATA ---
+            let ptx = petEntity.x + 7, pty = petEntity.y + 7;
+            if(player.activePetTier.includes("Mythic")) { ctx.strokeStyle="#ff0055"; ctx.beginPath(); ctx.arc(ptx, pty, 12, 0, Math.PI*2); ctx.stroke(); }
+            ctx.fillStyle = player.activePetColor;
+            ctx.beginPath(); ctx.arc(ptx, pty, 8, 0, Math.PI*2); ctx.fill();
+            // Telinga / Sayap Pet
+            ctx.beginPath();
+            ctx.moveTo(ptx - 6, pty - 4); ctx.lineTo(ptx - 10, pty - 10); ctx.lineTo(ptx - 2, pty - 6);
+            ctx.moveTo(ptx + 6, pty - 4); ctx.lineTo(ptx + 10, pty - 10); ctx.lineTo(ptx + 2, pty - 6);
+            ctx.fill();
+            ctx.fillStyle = "#fff"; ctx.font = "bold 9px sans-serif"; ctx.textAlign = "center"; ctx.fillText(player.activePetName, ptx, petEntity.y - 4);
 
-            if(player.weaponTier.includes("Mythic")) { ctx.strokeStyle="#ff0055"; ctx.beginPath(); ctx.arc(player.x+12, player.y+12, 18, 0, Math.PI*2); ctx.stroke(); }
-            ctx.fillStyle = player.color; ctx.fillRect(player.x, player.y, player.size, player.size);
-            ctx.fillStyle = "#fff"; ctx.font = "bold 11px sans-serif"; ctx.textAlign = "center"; ctx.fillText("HERO", player.x + 12, player.y - 5);
+            // --- VISUAL PEMAIN, ARMOR & SENJATA NYATA ---
+            let px = player.x + player.size/2;
+            let py = player.y + player.size/2;
+
+            if(player.weaponTier.includes("Mythic")) { 
+                ctx.strokeStyle="#ff0055"; ctx.lineWidth = 2;
+                ctx.beginPath(); ctx.arc(px, py, 22, 0, Math.PI*2); ctx.stroke(); 
+            }
+
+            // Warna Badan/Armor dinamis berdasarkan jenis Armor
+            let armorColor = player.color;
+            if (player.armor.includes("Emas")) armorColor = "#ffd700";
+            else if (player.armor.includes("Bayangan")) armorColor = "#212529";
+            else if (player.armor.includes("Valhalla") || player.armor.includes("Aegis")) armorColor = "#00bbf9";
+            else if (player.armor.includes("Perunggu")) armorColor = "#cd7f32";
+            else if (player.armor.includes("Kulit")) armorColor = "#8b4513";
+
+            // Gambar Badan / Armor (Torso)
+            ctx.fillStyle = armorColor;
+            ctx.fillRect(player.x + 5, player.y + 9, 14, 11);
+            ctx.strokeStyle = "#fff";
+            ctx.lineWidth = 1;
+            ctx.strokeRect(player.x + 5, player.y + 9, 14, 11);
+
+            // Kepala Karakter
+            ctx.fillStyle = "#ffccaa";
+            ctx.beginPath();
+            ctx.arc(px, py - 4, 7, 0, Math.PI*2);
+            ctx.fill();
+            ctx.strokeStyle = "#333";
+            ctx.lineWidth = 1;
+            ctx.stroke();
+
+            // Rambut / Helm
+            ctx.fillStyle = player.color;
+            ctx.beginPath();
+            ctx.arc(px, py - 6, 7, Math.PI, Math.PI * 2);
+            ctx.fill();
+
+            // Kaki Karakter
+            ctx.fillStyle = "#111";
+            ctx.fillRect(player.x + 7, player.y + 20, 4, 6);
+            ctx.fillRect(player.x + 13, player.y + 20, 4, 6);
+
+            // --- VISUAL SENJATA NYATA DI TANGAN ---
+            ctx.save();
+            ctx.translate(px + 10, py + 2);
+            if (player.weapon.includes("Excalibur") || player.weapon.includes("Kosmik")) {
+                // Senjata SSR Besar/Glowing
+                ctx.fillStyle = "#ff00ff";
+                ctx.fillRect(0, -12, 4, 20);
+                ctx.fillStyle = "#ffff00";
+                ctx.fillRect(-3, -4, 10, 3);
+            } else if (player.weapon.includes("Purba") || player.weapon.includes("Legendary")) {
+                // Tombak / Senjata Panjang
+                ctx.fillStyle = "#ffaa00";
+                ctx.fillRect(0, -16, 3, 24);
+            } else if (player.weapon.includes("Suci") || player.weapon.includes("Epic")) {
+                // Pedang Panjang
+                ctx.fillStyle = "#00bbf9";
+                ctx.fillRect(0, -10, 3, 16);
+                ctx.fillStyle = "#fff";
+                ctx.fillRect(-2, -2, 7, 2);
+            } else if (player.weapon.includes("Besi") || player.weapon.includes("Rare")) {
+                // Pedang Besi
+                ctx.fillStyle = "#adb5bd";
+                ctx.fillRect(0, -8, 3, 14);
+                ctx.fillStyle = "#495057";
+                ctx.fillRect(-2, -1, 7, 2);
+            } else if (!player.weapon.includes("Kosong")) {
+                // Senjata Umum / Kayu
+                ctx.fillStyle = "#a98467";
+                ctx.fillRect(0, -6, 3, 12);
+            }
+            ctx.restore();
+
+            // Label Nama Hero di atas kepala (Dinamis menggunakan player.name)
+            ctx.fillStyle = "#fff"; ctx.font = "bold 11px sans-serif"; ctx.textAlign = "center"; 
+            ctx.fillText(player.name || "HERO", px, player.y - 10);
             
             ctx.restore();
         }
