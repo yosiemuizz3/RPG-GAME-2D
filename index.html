@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>2D RPG World - Visible Gear & Pets v35</title>
+    <title>2D RPG World - Visible Gear & Pets v35 Pro</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; -webkit-user-select: none; touch-action: manipulation; }
         body { background-color: #0b0c10; color: #c5c6c7; font-family: -apple-system, BlinkMacSystemFont, sans-serif; display: flex; flex-direction: column; align-items: center; min-height: 100vh; padding: 5px; }
@@ -20,6 +20,12 @@
         .combat-banner { display: none; position: absolute; top: 6px; left: 6px; background: rgba(255, 0, 85, 0.9); border: 1px solid #ffaa00; padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: bold; color: #fff; z-index: 5; pointer-events: none; }
         .quest-banner { position: absolute; top: 6px; left: 50%; transform: translateX(-50%); background: rgba(11, 12, 16, 0.9); border: 1px solid #ffaa00; padding: 4px 8px; border-radius: 6px; font-size: 10px; color: #ffaa00; pointer-events: none; z-index: 4; font-weight: bold; }
         .region-banner { position: absolute; top: 32px; left: 50%; transform: translateX(-50%); background: rgba(11, 12, 16, 0.8); border: 1px solid #00bbf9; padding: 3px 8px; border-radius: 6px; font-size: 10px; color: #00bbf9; pointer-events: none; z-index: 4; font-weight: bold; }
+
+        /* BOSS HUD BAR */
+        .boss-hud { display: none; position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%); width: 80%; background: rgba(11, 12, 16, 0.9); border: 2px solid #ff0055; border-radius: 8px; padding: 4px 8px; z-index: 6; text-align: center; pointer-events: none; box-shadow: 0 0 10px rgba(255,0,85,0.5); }
+        .boss-hud-title { font-size: 10px; font-weight: bold; color: #ff0055; margin-bottom: 2px; }
+        .boss-hp-bar-container { width: 100%; height: 8px; background: #333; border-radius: 4px; overflow: hidden; border: 1px solid #ffaa00; }
+        .boss-hp-bar-fill { width: 100%; height: 100%; background: linear-gradient(90deg, #ff0055, #ffaa00); transition: width 0.1s linear; }
 
         /* MINI MAP */
         .minimap-wrapper { position: absolute; top: 8px; right: 8px; width: 90px; height: 90px; background: rgba(11, 12, 16, 0.85); border: 2px solid #66fcf1; border-radius: 8px; box-shadow: 0 0 8px rgba(102, 252, 241, 0.5); overflow: hidden; z-index: 5; pointer-events: none; }
@@ -70,7 +76,7 @@
 
     <div class="game-wrapper" id="gameWrapper">
         <div class="game-header">
-            <span class="game-title">🎮 RPG JANCOK:> (NEW UPDATE  v35)</span>
+            <span class="game-title">🎮 RPG JANCOK:> (NEW UPDATE v35)</span>
             <span class="watermark">dev Mr. yosie</span>
         </div>
 
@@ -80,6 +86,14 @@
             <div class="combat-banner" id="combatBanner">⚔️ MODE BERTARUNG!</div>
             <div class="quest-banner" id="questBanner">🎯 Quest: -</div>
             <div class="region-banner" id="regionBanner">📍 Memuat Peta...</div>
+
+            <!-- BOSS HUD TAMBAHAN -->
+            <div class="boss-hud" id="bossHud">
+                <div class="boss-hud-title" id="bossHudTitle">👑 BOSS: -</div>
+                <div class="boss-hp-bar-container">
+                    <div class="boss-hp-bar-fill" id="bossHpFill"></div>
+                </div>
+            </div>
 
             <div class="minimap-wrapper">
                 <canvas id="miniMapCanvas" width="90" height="90"></canvas>
@@ -247,6 +261,10 @@
                 osc.type = 'triangle'; osc.frequency.setValueAtTime(300, now); osc.frequency.setValueAtTime(600, now + 0.15);
                 gain.gain.setValueAtTime(0.3, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
                 osc.start(now); osc.stop(now + 0.3);
+            } else if (type === 'boss_skill') {
+                osc.type = 'sawtooth'; osc.frequency.setValueAtTime(150, now); osc.frequency.exponentialRampToValueAtTime(40, now + 0.4);
+                gain.gain.setValueAtTime(0.4, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.4);
+                osc.start(now); osc.stop(now + 0.4);
             }
         }
 
@@ -416,12 +434,12 @@
                 let ex = Math.random()*(MAP_WIDTH-200)+100;
                 let ey = Math.random()*(MAP_HEIGHT-200)+100;
                 if(ex > 1750 && ex < 2250 && ey > 1300 && ey < 1700) continue;
-                enemies.push({ x: ex, y: ey, ...t, maxHp: t.hp, alive: true, agro: false, lastAtk: 0 });
+                enemies.push({ x: ex, y: ey, spawnX: ex, spawnY: ey, ...t, maxHp: t.hp, alive: true, agro: false, lastAtk: 0, deathTime: 0, skillCooldown: 0 });
             }
-            enemies.push({ x: 400, y: 400, name: "Raja Slime (BOSS)", color: "#00ff66", hp: 1500, maxHp: 1500, atk: 80, exp: 800, gold: 500, isBoss: true, rate: 0.35, alive: true, agro: false, lastAtk: 0 });
-            enemies.push({ x: 3600, y: 400, name: "Naga Api (BOSS)", color: "#d00000", hp: 2000, maxHp: 2000, atk: 120, exp: 1200, gold: 800, isBoss: true, rate: 0.40, alive: true, agro: false, lastAtk: 0 });
-            enemies.push({ x: 400, y: 2600, name: "Yeti Raksasa (BOSS)", color: "#e0aaff", hp: 1800, maxHp: 1800, atk: 100, exp: 1000, gold: 600, isBoss: true, rate: 0.35, alive: true, agro: false, lastAtk: 0 });
-            enemies.push({ x: 3600, y: 2600, name: "Raja Iblis (BOSS)", color: "#7b2cbf", hp: 3000, maxHp: 3000, atk: 160, exp: 2000, gold: 1500, isBoss: true, rate: 0.50, alive: true, agro: false, lastAtk: 0 });
+            enemies.push({ x: 400, y: 400, spawnX: 400, spawnY: 400, name: "Raja Slime (BOSS)", color: "#00ff66", hp: 1500, maxHp: 1500, atk: 80, exp: 800, gold: 500, isBoss: true, rate: 0.35, alive: true, agro: false, lastAtk: 0, deathTime: 0, skillCooldown: 0 });
+            enemies.push({ x: 3600, y: 400, spawnX: 3600, spawnY: 400, name: "Naga Api (BOSS)", color: "#d00000", hp: 2000, maxHp: 2000, atk: 120, exp: 1200, gold: 800, isBoss: true, rate: 0.40, alive: true, agro: false, lastAtk: 0, deathTime: 0, skillCooldown: 0 });
+            enemies.push({ x: 400, y: 2600, spawnX: 400, spawnY: 2600, name: "Yeti Raksasa (BOSS)", color: "#e0aaff", hp: 1800, maxHp: 1800, atk: 100, exp: 1000, gold: 600, isBoss: true, rate: 0.35, alive: true, agro: false, lastAtk: 0, deathTime: 0, skillCooldown: 0 });
+            enemies.push({ x: 3600, y: 2600, spawnX: 3600, spawnY: 2600, name: "Raja Iblis (BOSS)", color: "#7b2cbf", hp: 3000, maxHp: 3000, atk: 160, exp: 2000, gold: 1500, isBoss: true, rate: 0.50, alive: true, agro: false, lastAtk: 0, deathTime: 0, skillCooldown: 0 });
         }
 
         // CONTROLS
@@ -579,6 +597,7 @@
                     e.hp -= dmg; addDmgText(e.x, e.y, `-${dmg}`, "#ffaa00"); addParticles(e.x, e.y, "#ffaa00");
                     if(e.hp <= 0) {
                         e.alive = false; 
+                        e.deathTime = Date.now();
                         let earnedGold = Math.floor(e.gold * player.goldMultiplier);
                         let earnedExp = Math.floor(e.exp * player.expMultiplier);
                         player.gold += earnedGold; player.exp += earnedExp;
@@ -599,6 +618,7 @@
                     addDmgText(e.x, e.y, `-${dmg} ❄️`, "#00bbf9");
                     if(e.hp <= 0) { 
                         e.alive = false; 
+                        e.deathTime = Date.now();
                         let earnedGold = Math.floor(e.gold * player.goldMultiplier);
                         let earnedExp = Math.floor(e.exp * player.expMultiplier);
                         player.gold += earnedGold; player.exp += earnedExp; 
@@ -611,9 +631,49 @@
 
         function updateEnemyAI() {
             let now = Date.now();
+            let activeBoss = null;
+
             enemies.forEach(e => {
-                if(!e.alive || !e.agro) return;
+                if(!e.alive) {
+                    if (e.deathTime && now - e.deathTime >= 10000) {
+                        e.hp = e.maxHp;
+                        e.x = e.spawnX;
+                        e.y = e.spawnY;
+                        e.alive = true;
+                        e.agro = false;
+                        e.lastAtk = 0;
+                        e.skillCooldown = 0;
+                    }
+                    return;
+                }
+
                 let dx = player.x - e.x, dy = player.y - e.y, dist = Math.hypot(dx,dy);
+
+                // Boss tracking for HUD
+                if (e.isBoss && e.agro && dist < 450) {
+                    activeBoss = e;
+                }
+
+                if(!e.agro) return;
+
+                // Boss Special Attack Mechanics
+                if (e.isBoss) {
+                    if (!e.skillCooldown) e.skillCooldown = now;
+                    if (now - e.skillCooldown > 5000) {
+                        e.skillCooldown = now;
+                        playSound('boss_skill');
+                        animEffects.push({ type: 'ice', x: e.x+12, y: e.y+12, radius: 20, life: 25 });
+                        if (dist < 120) {
+                            let bossDmg = Math.floor(e.atk * 1.5 * (100/(100+getEquipTotalDef())));
+                            player.hp -= bossDmg;
+                            addDmgText(player.x, player.y, `-${bossDmg} 💥 (BOSS SKILL!)`, "#ff0055");
+                            log(`⚠️ ${e.name} mengeluarkan <span style="color:#ff0055">SKILL KHUSUS</span>!`);
+                            if(player.hp <= 0) { player.hp=player.maxHp; player.x=2000; player.y=1500; enemies.forEach(x=>x.agro=false); log("💀 Anda Mati! Respawn di Kota."); }
+                            updateUI();
+                        }
+                    }
+                }
+
                 if(dist < 35) {
                     if(now - e.lastAtk > 1000) {
                         let dmg = Math.max(1, Math.floor(e.atk * (100/(100+getEquipTotalDef()))));
@@ -621,8 +681,24 @@
                         if(player.hp <= 0) { player.hp=player.maxHp; player.x=2000; player.y=1500; enemies.forEach(x=>x.agro=false); log("💀 Anda Mati! Respawn di Kota."); }
                         updateUI();
                     }
-                } else { e.x += (dx/dist)*2.0; e.y += (dy/dist)*2.0; }
+                } else { 
+                    // Boss moves slightly faster when HP is below 50% (Rage Mode)
+                    let speedMult = (e.isBoss && e.hp < e.maxHp * 0.5) ? 2.8 : 2.0;
+                    e.x += (dx/dist)*speedMult; 
+                    e.y += (dy/dist)*speedMult; 
+                }
             });
+
+            // Update Boss HUD display
+            const bossHud = document.getElementById("bossHud");
+            if (activeBoss) {
+                bossHud.style.display = "block";
+                document.getElementById("bossHudTitle").innerText = `👑 ${activeBoss.name} (HP: ${activeBoss.hp}/${activeBoss.maxHp})`;
+                let hpPercent = Math.max(0, (activeBoss.hp / activeBoss.maxHp) * 100);
+                document.getElementById("bossHpFill").style.width = hpPercent + "%";
+            } else {
+                bossHud.style.display = "none";
+            }
         }
 
         // GUI & MENUS
@@ -826,7 +902,7 @@
                 ctx.fillText(d.name, d.x, d.y - 32);
             });
             
-            // --- DETAILED & CLEAR MONSTER SPRITES ---
+            // --- DETAILED & CLEAR MONSTER SPRITES WITH FLOATING HP BARS ---
             enemies.forEach(e => { 
                 if(e.alive) { 
                     let ex = e.x + 12;
@@ -965,8 +1041,17 @@
                     }
 
                     ctx.restore();
+                    
+                    // Render Floating Mini Health Bar above monster/boss
+                    let barW = e.isBoss ? 36 : 24;
+                    let barH = 4;
+                    ctx.fillStyle = "rgba(0,0,0,0.6)";
+                    ctx.fillRect(ex - barW/2, e.y - 18, barW, barH);
+                    ctx.fillStyle = e.isBoss ? "#ff0055" : "#00ff66";
+                    ctx.fillRect(ex - barW/2, e.y - 18, barW * (e.hp / e.maxHp), barH);
+
                     ctx.fillStyle = "#fff"; ctx.font = "bold 10px sans-serif"; ctx.textAlign = "center";
-                    ctx.fillText(e.name, ex, e.y - 6); 
+                    ctx.fillText(e.name, ex, e.y - 22); 
                 } 
             });
             
